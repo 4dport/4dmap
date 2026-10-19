@@ -4,8 +4,10 @@ if (/\sQQ|micromessenger/i.test(navigator.userAgent.toLowerCase())){
 	全遮板.innerHTML = '請以瀏覽器啓視';
 	document.body.appendChild(全遮板);
 }
-import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.13.0/dist/maplibre-gl.mjs';
+import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.15.0/dist/maplibre-gl.mjs';
 import { TerminatorLayer } from "./terminator-layer.js";
+// import { addTreeTerrainLayer } from "./tree-terrain-layer.js";
+import { 轉瓦內字 } from './cvt/cc.js';
 const pmProtocol = new pmtiles.Protocol();
 maplibregl.addProtocol('pmtiles',pmProtocol.tile);
 const PMTILES_NAME = ['鄉以上地點','中國无港澳臺海域','中國政區界','海深','公海和南極'];
@@ -14,27 +16,12 @@ for (const pmtilesUrl of PMTILES_NAME){
 	const p = new pmtiles.PMTiles(TILES_LOC + pmtilesUrl +'.pmtiles');
 	pmProtocol.add(p);
 }
-function 簡轉正(str){
-	return str.replace(/连/g,'連');
-}
-maplibregl.addProtocol('cog', MaplibreCOGProtocol.cogProtocol);
-maplibregl.addProtocol('簡正轉換', async (requestParameters, abortController)=>{
-	// const realTileUrl = requestParameters.url.replace('簡正轉換://', 'https://');
-	// const response = await fetch(realTileUrl, { signal: abortController.signal });
-	// const arrayBuffer = await response.arrayBuffer();
-	// const pbf = new window.Pbf(new Uint8Array(arrayBuffer));
-	// const tile = new window.MapboxVectorTile.VectorTile(pbf);
-	// const targetLayer = tile.layers['poi'];
-	// if (targetLayer) {
-	// 	for (let i = 0; i < targetLayer.length; i++) {
-	// 		const feature = targetLayer.feature(i);
-	// 		if (feature.properties.name) {
-	// 			// Perform the OpenCC Simplified -> Traditional character swap
-	// 			feature.properties.name = 簡轉正(feature.properties.name);
-	// 		}
-	// 	}
-	// }
+const ccProtocol = '轉正';
+maplibregl.addProtocol(ccProtocol, (request) => {
+	const url = request.url.replace(ccProtocol + '://', '');
+	return 轉瓦內字(url);
 });
+// maplibregl.addProtocol('cog', MaplibreCOGProtocol.cogProtocol);
 var 圖央 = [localStorage.getItem("經度"), localStorage.getItem("緯度")], 初縮放 = localStorage.getItem("縮放級");
 if(圖央.some(d=>d==undefined)){
 	圖央 = [112.45, 34.67];
@@ -91,7 +78,6 @@ export const lmap = new maplibregl.Map({
 			},
 			海底高程: {
 				type: 'raster-dem',
-				// tiles: [TILES_LOC+'GEBCO_2026/{z}/{x}/{y}.webp'],
 				url: `pmtiles://${TILES_LOC}海深.pmtiles`,
 				tileSize: 256, encoding: "terrarium"
 			},
@@ -148,9 +134,8 @@ export const lmap = new maplibregl.Map({
 	},
 	minZoom: 1, maxZoom: 21, maxPitch: 85
 });
-let 昏旦;
 lmap.on('style.load', () => {
-	昏旦 = new TerminatorLayer({updateInterval: 30000});
+	let 昏旦 = new TerminatorLayer({updateInterval: 30000});
 	const layers = lmap.getStyle().layers;
 	const firstSymbol = layers.find(layer => layer.type === "symbol");
 	lmap.addLayer(昏旦, firstSymbol?.id);
@@ -176,74 +161,14 @@ lmap.addControl(
 		exaggeration: 1
 	})
 );
-async function testFetchLatency(url, bearTime=4000) {
-	const start = performance.now();
-	try {
-		const res = await fetch(`${url}${url.includes('?')?'&':'?'}_t=${Date.now()}`, {
-			method: "GET", // HEAD 只取標頭，不下載完整內容
-			signal: AbortSignal.timeout(bearTime)
-		});
-		if (res.ok) {
-			return performance.now() - start;
-		}
-		return null;// 逾時
-	} catch {
-		return null;// 出錯
+lmap.setTransformRequest((url, resourceType) => {
+	if (url.startsWith('https://tiles.openfreemap.org/') && resourceType === 'Tile') {
+		return { url: ccProtocol + '://' + url };
 	}
-}
-function 易圖層源(mymap, newsource){
-	const oldLayers = mymap.getStyle().layers;
-	const layerIndex = oldLayers.findIndex(l => l.id==="底圖");
-	const layerDef = oldLayers[layerIndex];
-	const before = oldLayers[layerIndex+1] && oldLayers[layerIndex+1].id;
-	layerDef.source = newsource;
-	mymap.removeLayer("底圖");
-	mymap.addLayer(layerDef, before);
-}
-function 測底圖延遟(易源=false){
-	let 諸選項 = document.getElementById("底圖選單").options;
-	for (const 底圖 in 備選底圖){
-		testFetchLatency(備選底圖[底圖]["url"].replace('{x}','10').replace('{y}','20').replace('{z}','5')).then(r=>{
-			備選底圖[底圖]["響應時長"] = r;
-			let 該底圖選項 = document.getElementById("底圖選單").querySelector(`option[value="${底圖}"]`);
-			該底圖選項.dataset.latency = r;
-			該底圖選項.text = 該底圖選項.text.replace(/[⚫️🔴🟡🟢]/ug,'');
-			if (r==null){
-				該底圖選項.text = '⚫️'+ 該底圖選項.text;
-				該底圖選項.title = '連不上';
-			} else if (r>1500){
-				該底圖選項.text = '🔴'+ 該底圖選項.text;
-				該底圖選項.title = '慢（'+ String(Math.round(r/10))+'）';
-			} else if (r>800){
-				該底圖選項.text = '🟡'+ 該底圖選項.text;
-				該底圖選項.title = '中（'+ String(Math.round(r/10))+'）';
-			} else {
-				該底圖選項.text = '🟢'+ 該底圖選項.text;
-				該底圖選項.title = '快（'+ String(Math.round(r/10))+'）';
-			}
-			if (r!=null && (選中底圖=='' || 易源)){
-				易源 = false;
-				選中底圖 = 底圖;
-				易圖層源(lmap, 選中底圖);
-				for (let i=0; i<諸選項.length; i++){
-					if (諸選項[i].value==選中底圖){
-						諸選項[i].selected = true; break;
-					}
-				}
-			}
-		});
-	}
-}
-function 測瓦服務器延遟(){
-	const servers = {"雲耀":"https://pub-76f7e7fbf50f4423b85486dda0feb0c9.r2.dev/","Neocities":"https://vert.neocities.org/m/"};
-	for (const server in servers){
-		testFetchLatency(servers[server]+'nst.webp', 10000).then(r=>{
-			console.log(server,r);
-		});
-	}
-}
-測底圖延遟(true);
-setInterval(測底圖延遟, 10000);
+	return undefined;
+});
+測底圖延遟(lmap, true);
+setInterval(() => 測底圖延遟(lmap), 10000);
 setTimeout(測瓦服務器延遟, 5000);
 document.getElementById("底圖選單").addEventListener('change',function(){
 	var 所選值 = this.selectedOptions[0].value;
@@ -256,3 +181,4 @@ lmap.on('moveend',()=>{
 lmap.on('zoomend',()=>{
 	localStorage.setItem("縮放級", lmap.getZoom().toString());
 });
+// addTreeTerrainLayer(lmap);

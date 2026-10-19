@@ -396,6 +396,20 @@ const 諸層 = [{
 		]
 	}
 },{
+	"id": "路-一級緣", "type": "line",
+	"source": "開放免費地圖", "source-layer": "transportation",
+	"filter": ["all",
+		["match",["get", "brunnel"],["bridge", "tunnel"], false, true],
+		["match",["get", "class"],["primary", "trunk"], true, false]//["!=", ["get", "ramp"], 1]
+	],
+	"layout": {"line-join": "round"},
+	"paint": {
+		"line-color": "hsl(211, 30%, 45%)",
+		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
+			5,0.2, 6,0.9, 7,3, 20,24
+		]
+	}
+},{
 	"id": "路-一級", "type": "line",
 	"source": "開放免費地圖", "source-layer": "transportation",
 	"filter": ["all",
@@ -406,7 +420,7 @@ const 諸層 = [{
 	"paint": {
 		"line-color": "hsl(208, 24%, 70%)",
 		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			5,0.4, 6,0.7, 7,1.75, 20,20
+			5,0.2, 6,0.7, 7,1.75, 20,20
 		],
 		"line-opacity": ["interpolate", ["linear"], ["zoom"], 5,0, 6,1]
 	}
@@ -425,7 +439,7 @@ const 諸層 = [{
 	"paint": {
 		"line-color": "#e9ac77",
 		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			4,0, 6,1.2, 20,26
+			4,0, 6,2, 20,26
 		],
 		"line-opacity": ["interpolate", ["linear"], ["zoom"], 3,0, 5,1]
 	}
@@ -444,7 +458,7 @@ const 諸層 = [{
 	"paint": {
 		"line-color": "hsl(211, 30%, 65%)",
 		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			4,0, 6,0.8, 20,20
+			4,0, 6,1, 20,22
 		],
 		"line-opacity": ["interpolate", ["linear"], ["zoom"], 3,0, 5,1]
 	}
