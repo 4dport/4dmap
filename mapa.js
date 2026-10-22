@@ -161,6 +161,12 @@ lmap.addControl(
 		exaggeration: 1
 	})
 );
+lmap.addControl(
+	new maplibregl.GeolocateControl({
+		positionOptions: {enableHighAccuracy: true},
+		trackUserLocation: true
+	})
+);
 lmap.setTransformRequest((url, resourceType) => {
 	if (url.startsWith('https://tiles.openfreemap.org/') && resourceType === 'Tile') {
 		return { url: ccProtocol + '://' + url };

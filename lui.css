@@ -5,6 +5,6 @@ html, body, #map { height: 100%; }
 @media screen and (max-aspect-ratio: 4/5) {
 button.maplibregl-ctrl-zoom-in, button.maplibregl-ctrl-zoom-out {display:none}
 }
-#設置面板 {position:fixed; right:10px; top:13em; writing-mode:vertical-rl; background-color:hsla(0,0%,100%,.3); backdrop-filter:blur(2px); white-space:nowrap}
+#設置面板 {position:fixed; right:10px; top:14em; writing-mode:vertical-rl; background-color:hsla(0,0%,100%,.3); backdrop-filter:blur(2px); white-space:nowrap}
 #底圖選單 {font-size:1em; background-color:transparent; border-radius:3px}
 #nl-badge-frame {opacity:0.6; backdrop-filter:blur(2px)}
