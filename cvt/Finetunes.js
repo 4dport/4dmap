@@ -60,5 +60,6 @@ export const 微調字對 = `望	朢
 宮	宫
 呂	吕
 侶	侣
-遲	遟`.split('\n').map(條=>條.split('	'));
+遲	遟
+聯	聮`.split('\n').map(條=>條.split('	'));
 // 醬	酱

@@ -14,6 +14,10 @@ function 轉簡為正(str){
 	轉得 = 轉得.join('');
 	return 轉得;
 }
+function 微調(str){
+	const 字映射 = new Map(微調字對);
+	return str.split('').map(c => 字映射.get(c) || c).join('');
+}
 export async function 轉瓦內字(url){
 	return fetch(url).then((response) => response.arrayBuffer()).then((data) => new VectorTile(new Protobuf(data))).then((tile) => ({
 		layers: Object.entries(tile.layers).reduce((acc, [layerId, layer]) => ({...acc,
@@ -21,10 +25,12 @@ export async function 轉瓦內字(url){
 				feature: (index) => {
 					const feature = layer.feature(index);
 					if (feature.properties) {
-						if (typeof feature.properties["name"] ==='string')
-							feature.properties["name"] = 轉簡為正(feature.properties["name"]);
-						if (typeof feature.properties["name:zh"] ==='string')
+						if (typeof feature.properties["name:zh-Hant"] ==='string')
+							feature.properties["name:zh-Hant"] = 微調(feature.properties["name:zh-Hant"]);
+						else if (typeof feature.properties["name:zh"] ==='string')
 							feature.properties["name:zh"] = 轉簡為正(feature.properties["name:zh"]);
+						else if (typeof feature.properties["name"] ==='string')
+							feature.properties["name"] = 轉簡為正(feature.properties["name"]);
 					}
 					return feature;
 				}
