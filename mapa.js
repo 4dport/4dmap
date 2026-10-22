@@ -167,12 +167,17 @@ lmap.setTransformRequest((url, resourceType) => {
 	}
 	return undefined;
 });
-測底圖延遟(lmap, true);
+// 測底圖延遟(lmap, true);
 setInterval(() => 測底圖延遟(lmap), 10000);
 setTimeout(測瓦服務器延遟, 5000);
 document.getElementById("底圖選單").addEventListener('change',function(){
-	var 所選值 = this.selectedOptions[0].value;
-	易圖層源(lmap, 所選值);
+	const 所選值 = this.selectedOptions[0].value;
+	if (所選值=='无'){
+		lmap.setLayoutProperty('底圖','visibility','none');
+	} else {
+		lmap.setLayoutProperty('底圖','visibility','visible');
+		易圖層源(lmap, 所選值);
+	}
 });
 lmap.on('moveend',()=>{
 	localStorage.setItem("經度", lmap.getCenter().lng.toString());

@@ -57,11 +57,11 @@ function 測底圖延遟(mymap, 易源=false){
 				該底圖選項.text = '🟢'+ 該底圖選項.text;
 				該底圖選項.title = '快（'+ String(Math.round(r/10))+'）';
 			}
-			if (r!=null && (選中底圖=='' || 易源)){
+			if (r!=null && 易源){//r!=null && (選中底圖=='' || 易源)
 				易源 = false;
 				選中底圖 = 底圖;
 				易圖層源(mymap, 選中底圖);
-				for (let i=0; i<諸選項.length; i++){
+				for (let i=1; i<諸選項.length; i++){
 					if (諸選項[i].value==選中底圖){
 						諸選項[i].selected = true; break;
 					}
