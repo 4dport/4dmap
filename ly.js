@@ -57,7 +57,7 @@ const 路寬 = {"馳":["interpolate",["exponential", 1.2],["zoom"],
 	], "局域":["interpolate",["exponential", 1.2],["zoom"],
 		13.5,0, 14,2.5, 20,11.5
 	], "巷":["interpolate",["exponential", 1.2],["zoom"],
-		15.5,0, 16,2, 20,7.5
+		15.5,0, 16,2, 20,9
 	], "步":["interpolate",["exponential", 1.2],["zoom"],
 		15,1.2, 20,4
 	], "軌內":["interpolate",["exponential", 1.3],["zoom"],
@@ -249,10 +249,15 @@ const 共樣式 = {
 			"text-halo-color": "hsl(156, 100%, 25%)",
 			"text-halo-width": 0.5
 		}
+	},
+	圖標:{
+		"icon-image": ["match",["get", "subclass"],["florist", "furniture"],["get", "subclass"],["get", "class"]],
+		"text-anchor": "left", "text-field": 語文候補列,
+		"text-optional": true, "text-padding": 2,
 	}
 };
 const 諸層 = [{
-	"id": "陸", "type": "background", "paint": {"background-color": "#F8F4F0"}
+	"id": "陸", "type": "background", "paint": {"background-color": "#F9F8F1"}
 },{
 	id: "底圖", type: "raster", source: "蹤迹", layout:{visibility: "none"}
 },{
@@ -459,7 +464,7 @@ const 諸層 = [{
 	"source": "開放免費地圖", "source-layer": "transportation",
 	"filter": ["all",
 		["==",["get", "brunnel"], "tunnel"],
-		["==", ["get", "class"], "minor"]
+		["match",["get", "class"],["service", "track"], true, false]
 	],
 	"layout": {"line-join": "round"},
 	"paint": {
@@ -469,7 +474,7 @@ const 諸層 = [{
 			12,0, 12.5,1
 		],
 		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			12,0.5, 13,1, 14,4, 20,15
+			15,1, 16,4, 20,12
 		]
 	}
 },{
@@ -477,14 +482,14 @@ const 諸層 = [{
 	"source": "開放免費地圖", "source-layer": "transportation",
 	"filter": ["all",
 		["==",["get", "brunnel"], "tunnel"],
-		["match",["get", "class"],["service", "track"], true, false]
+		["==", ["get", "class"], "minor"]
 	],
 	"layout": {"line-join": "round"},
 	"paint": {
 		"line-color": 色["局域路緣"], "line-opacity": 0.8,
 		"line-dasharray": [0.5, 0.25],
 		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			15,1, 16,4, 20,11
+			12,0.5, 13,1, 14,4, 20,15
 		]
 	}
 },{
@@ -604,7 +609,7 @@ const 諸層 = [{
 	"source": "開放免費地圖", "source-layer": "transportation",
 	"filter": ["all",
 		["==",["get", "brunnel"], "tunnel"],
-		["==", ["get", "class"], "minor"]
+		["match",["get", "class"],["service", "track"], true, false]
 	],
 	"layout": {"line-join": "round"},
 	"paint": {
@@ -616,7 +621,7 @@ const 諸層 = [{
 	"source": "開放免費地圖", "source-layer": "transportation",
 	"filter": ["all",
 		["==",["get", "brunnel"], "tunnel"],
-		["match",["get", "class"],["service", "track"], true, false]
+		["==", ["get", "class"], "minor"]
 	],
 	"layout": {"line-join": "round"},
 	"paint": {
@@ -769,7 +774,7 @@ const 諸層 = [{
 	"paint": {
 		"line-color": 色["巷緣"],
 		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			15,1, 16,4, 20,11
+			15,1, 16,4, 20,12
 		]
 	}
 },{
@@ -778,7 +783,7 @@ const 諸層 = [{
 	"filter": ["all",
 		["match",["geometry-type"],["LineString", "MultiLineString"], true, false],
 		["match",["get", "brunnel"],["bridge", "tunnel"], false, true],
-		["match",["get", "class"],["minor"], true, false]
+		["==",["get", "class"], "minor"]
 	],
 	"layout": {"line-cap": "round", "line-join": "round"},
 	"paint": {
@@ -910,7 +915,7 @@ const 諸層 = [{
 	"filter": ["all",
 		["match",["geometry-type"],["LineString", "MultiLineString"], true, false],
 		["match",["get", "brunnel"],["bridge", "tunnel"], false, true],
-		["match",["get", "class"],["minor"], true, false]
+		["==",["get", "class"], "minor"]
 	],
 	"layout": {"line-cap": "round", "line-join": "round"},
 	"paint": {
@@ -1576,7 +1581,8 @@ const 諸層 = [{
 	id:"點標", type:"symbol", source:"開放免費地圖", "source-layer": "poi", "minzoom": 12,
 	filter: ["all",
 		["has", "name"],
-		["!", ["has", "building:part"]] 
+		["match",["get", "class"],["airport", "bus", "railway"], false, true],
+		// ["!", ["has", "building:part"]]
 	],
 	layout:{
 		"text-field": 語文候補列,
@@ -1591,6 +1597,86 @@ const 諸層 = [{
 		"text-color": "#2c3e50",
 		"text-halo-color": "#ffffff",
 		"text-halo-width": 1.2
+	}
+},{
+	"id": "公共汽車站名", "type": "symbol",
+	"source": "開放免費地圖", "source-layer": "poi",
+	"minzoom": 13,
+	"filter": ["==",["get", "class"], "bus"],
+	"layout": {
+		...共樣式["圖標"], "icon-size": 0.6, "text-offset": [0.6, 0],
+		"text-font": ["step", ["zoom"], ["literal", 黑體], 13, ["literal", 膚廓體]],
+		"text-max-width": 7,
+		"text-size": ["interpolate",["linear"],["zoom"], 14,10, 16,14],
+		"text-writing-mode": ["vertical"],
+	},
+	"paint": {
+		"text-color": "#444",
+		"text-halo-blur": 0.5,
+		"text-halo-color": "#fff",
+		"text-halo-width": 1
+	}
+},{
+	"id": "邑軌交通站名", "type": "symbol",
+	"source": "開放免費地圖", "source-layer": "poi",
+	"minzoom": 12,
+	"filter": ["all",
+		["==",["get", "class"], "railway"],
+		["!=", ["get", "subclass"], "station"]
+	],
+	"layout": {
+		...共樣式["圖標"], "icon-size": 0.7, "text-offset": [0.6, 0],
+		"text-font": ["step", ["zoom"], ["literal", 黑體], 13, ["literal", 膚廓體]],
+		"text-max-width": 7,
+		"text-size": ["interpolate",["linear"],["zoom"], 12,10, 18,16],
+		"text-writing-mode": ["vertical"],
+	},
+	"paint": {
+		"text-color": "#444",
+		"text-halo-blur": 0.5,
+		"text-halo-color": "#fff",
+		"text-halo-width": 1
+	}
+},{
+	"id": "長途鐵路站名", "type": "symbol",
+	"source": "開放免費地圖", "source-layer": "poi",
+	"minzoom": 11, "maxzoom": 20,
+	"filter": ["all",
+		["==",["get", "class"], "railway"],
+		["==", ["get", "subclass"], "station"]
+	],
+	"layout": {
+		...共樣式["圖標"], "text-radial-offset": ["interpolate",["linear"],["zoom"], 11,1.2,14,0.6],
+		"text-font": ["step", ["zoom"], ["literal", 黑體], 13, ["literal", 隸書]],
+		"text-max-width": 9,
+		"text-size": ["interpolate",["linear"],["zoom"], 12,10, 18,20],
+		"text-writing-mode": ["vertical"],
+	},
+	"paint": {
+		"text-color": "#870404",
+		"text-halo-blur": 0.5,
+		"text-halo-color": "#fff",
+		"text-halo-width": 1
+	}
+},{
+	"id": "飛機場名", "type": "symbol",
+	"source": "開放免費地圖", "source-layer": "aerodrome_label",
+	"minzoom": 11, "maxzoom": 19,
+	"filter": ["has", "iata"],
+	"layout": {
+		"icon-image": "airport_11",
+		"text-anchor": "left", "text-field": 語文候補列,
+		"text-optional": true, "text-padding": 2, "text-offset": [0.6, 0],
+		"text-font": ["step", ["zoom"], ["literal", 黑體], 14, ["literal", 膚廓體]],
+		"text-max-width": 9,
+		"text-size": ["interpolate",["linear"],["zoom"], 12,10, 18,16],
+		"text-writing-mode": ["vertical","horizontal"],
+	},
+	"paint": {
+		"text-color": "#222",
+		"text-halo-blur": 0.5,
+		"text-halo-color": "#fff",
+		"text-halo-width": 1
 	}
 },{
 	"id":"中國大陸之岬角", "type":"symbol",
@@ -1717,27 +1803,7 @@ const 諸層 = [{
 		"text-halo-width": ["interpolate", ["linear"], ["zoom"], 3,1, 15,2]
 	}
 },
-"中國大陸之半島","中國大陸之海域","中國大陸之海灣","中國大陸之海峽","中國大陸之群島",
-{
-	"id": "飛機場名", "type": "symbol",
-	"source": "開放免費地圖", "source-layer": "aerodrome_label",
-	"minzoom": 11,
-	"filter": ["has", "iata"],
-	"layout": {
-		"text-field": 語文候補列,
-		"text-font": ["step", ["zoom"], ["literal", 黑體], 12, ["literal", 隸書]],
-		"text-max-width": 9,
-		"text-offset": [0, 0.6], "text-optional": true, "text-padding": 2,
-		"text-size": ["interpolate",["linear"],["zoom"], 10,12, 16,14],
-		"text-writing-mode": ["vertical","horizontal"],
-	},
-	"paint": {
-		"text-color": "#444",
-		"text-halo-blur": 0.5,
-		"text-halo-color": "#fff",
-		"text-halo-width": 1
-	}
-}
+"中國大陸之半島","中國大陸之海域","中國大陸之海灣","中國大陸之海峽","中國大陸之群島"
 ];
 function 填層(){
 	const 平面橋始序 = 諸層.indexOf("平面橋");
@@ -1833,12 +1899,31 @@ function 填層(){
 		]
 	}
 },{
-	"id": "橋"+String(l)+"小路緣", "type": "line",
+	"id": "橋"+String(l)+"巷緣", "type": "line",
 	"source": "開放免費地圖", "source-layer": "transportation",
 	"filter": ["all",
 		["match",["geometry-type"],["LineString", "MultiLineString"], true, false],
 		["==",["get", "brunnel"], "bridge"],
-		["match",["get", "class"],["minor", "service", "track"], true, false],
+		["match",["get", "class"],["service", "track"], true, false],
+		濾層條件
+	],
+	"layout": {"line-cap": "butt", "line-join": "round"},
+	"paint": {
+		"line-color": 色["巷緣"],
+		"line-opacity": ["interpolate",["linear"],["zoom"],
+			12,0, 12.5,1
+		],
+		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
+			12,0.5, 13,1, 14,4, 20,16
+		]
+	}
+},{
+	"id": "橋"+String(l)+"局域路緣", "type": "line",
+	"source": "開放免費地圖", "source-layer": "transportation",
+	"filter": ["all",
+		["match",["geometry-type"],["LineString", "MultiLineString"], true, false],
+		["==",["get", "brunnel"], "bridge"],
+		["==",["get", "class"], "minor"],
 		濾層條件
 	],
 	"layout": {"line-cap": "butt", "line-join": "round"},
@@ -1848,7 +1933,7 @@ function 填層(){
 			12,0, 12.5,1
 		],
 		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			12,0.5, 13,1, 14,6, 20,24
+			12,0.5, 13,1, 14,6, 20,20
 		]
 	}
 },{
@@ -1889,7 +1974,7 @@ function 填層(){
 		["==", ["get", "ramp"], 1],
 		濾層條件
 	],
-	"layout": {"line-join": "round"},
+	"layout": {"line-cap": "round","line-join": "round"},
 	"paint": {
 		"line-color": 色["一級路"],
 		"line-width": 路寬["聮"]
@@ -1900,7 +1985,7 @@ function 填層(){
 	"filter": ["all",
 		["match",["geometry-type"],["LineString", "MultiLineString"], true, false],
 		["==",["get", "brunnel"], "bridge"],
-		["==",["get", "class"], "minor"],
+		["match",["get", "class"],["service", "track"], true, false],
 		濾層條件
 	],
 	"layout": {"line-cap": "round", "line-join": "round"},
@@ -1914,7 +1999,7 @@ function 填層(){
 	"filter": ["all",
 		["match",["geometry-type"],["LineString", "MultiLineString"], true, false],
 		["==",["get", "brunnel"], "bridge"],
-		["match",["get", "class"],["service", "track"], true, false],
+		["==",["get", "class"], "minor"],
 		濾層條件
 	],
 	"layout": {"line-cap": "round", "line-join": "round"},

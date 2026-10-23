@@ -130,7 +130,8 @@ export const lmap = new maplibregl.Map({
 		},
 		// light: {"anchor": "map", "color": "#fff", "position": [1.4, -180, 90], "intensity": 0.1},
 		sky: {"sky-color":"hsl(197, 71%, 63%)", "horizon-color":"hsl(213, 76%, 65%)", "atmosphere-blend": 0.25},
-		projection: {"type": "globe"}
+		projection: {"type": "globe"},
+		sprite: "https://tiles.openfreemap.org/sprites/ofm_f384/ofm"
 	},
 	minZoom: 1, maxZoom: 21, maxPitch: 85
 });
