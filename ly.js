@@ -40,7 +40,8 @@ const 隸書 = ["漢文隸書","隶书"];
 const 語文候補列 = ["coalesce", ["get","name:zh-Hant"],["get","name:zh"],["get","name:ko-Hani"],["get","name"],["get","name:ja"]];
 const 色 = {"馳道":["interpolate",["linear"],["zoom"],15,"#fc8",17,"hsl(211, 30%, 55%)"], "幹路":"hsl(211, 30%, 65%)", "一級路":"hsl(208, 24%, 70%)", "二級路":"hsl(208, 15%, 70%)", "三級路":"hsl(208, 15%, 70%)", "局域路":"hsl(208, 15%, 90%)", "巷":"#fff", "步道": "hsl(30, 35%, 73%)",
 	"馳道緣":["interpolate",["linear"],["zoom"],15,"#e9ac77",17,"hsl(8, 72%, 60%)"], "幹路緣":"hsl(8, 72%, 69%)", "一二三級路緣":"hsl(211, 30%, 45%)", "局域路緣":"hsl(208, 5%, 70%)", "巷緣": "#cfcdca",
-	"邑軌":"#bbb", "長途軌":"#555", "軌間":"#fff"
+	"邑軌":"#bbb", "長途軌":"#555", "軌間":"#fff",
+	"水名":"rgb(0, 10, 154)"//#495e91
 };
 const 路寬 = {"馳":["interpolate",["exponential", 1.2],["zoom"],
 		6.5,0, 7,0.5, 20,18
@@ -229,7 +230,7 @@ const 共樣式 = {
 			"text-ignore-placement": false
 		},
 		paint: {
-			"text-color": "rgb(0, 10, 154)",
+			"text-color": 色["水名"],
 			"text-halo-color": "#fff",
 			"text-halo-width": 0.5
 		}
@@ -1406,7 +1407,7 @@ const 諸層 = [{
 		"text-size": ["interpolate", ["linear"], ["zoom"], 8,12, 10,16]
 	},
 	"paint": {
-		"text-color": "#74aee9",
+		"text-color": 色["水名"],
 		"text-halo-color": "rgba(255,255,255,0.7)",
 		"text-halo-width": 1.5
 	}
@@ -1426,7 +1427,7 @@ const 諸層 = [{
 		"text-rotation-alignment": "map",// 隨圖轉
 	},
 	"paint": {
-		"text-color": "#495e91",
+		"text-color": 色["水名"],
 		"text-halo-color": "rgba(255,255,255,0.7)",
 		"text-halo-width": 1.5
 	}
@@ -1446,7 +1447,7 @@ const 諸層 = [{
 		]
 	},
 	"paint": {
-		"text-color": "#495e91",
+		"text-color": 色["水名"],
 		"text-halo-color": "rgba(255,255,255,0.7)",
 		"text-halo-width": 1.5
 	}
@@ -1601,7 +1602,7 @@ const 諸層 = [{
 },{
 	"id": "公共汽車站名", "type": "symbol",
 	"source": "開放免費地圖", "source-layer": "poi",
-	"minzoom": 13,
+	"minzoom": 15,
 	"filter": ["==",["get", "class"], "bus"],
 	"layout": {
 		...共樣式["圖標"], "icon-size": 0.6, "text-offset": [0.6, 0],
