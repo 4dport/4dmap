@@ -4,7 +4,7 @@ if (/\sQQ|micromessenger/i.test(navigator.userAgent.toLowerCase())){
 	全遮板.innerHTML = '請以瀏覽器啓視';
 	document.body.appendChild(全遮板);
 }
-import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.15.0/dist/maplibre-gl.mjs';
+import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.mjs';
 import { getSubsolarPoint, TerminatorLayer } from "./terminator-layer.js";
 // import { addTreeTerrainLayer } from "./tree-terrain-layer.js";
 import { 轉瓦內字 } from './cvt/cc.js';
