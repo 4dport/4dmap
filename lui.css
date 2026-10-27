@@ -3,7 +3,7 @@ html, body, #map { height: 100%; }
 .maplibregl-ctrl-group {background-color:#fffb; backdrop-filter:blur(2px)}
 .maplibregl-ctrl-bottom-right {opacity:0.01}
 @media screen and (max-aspect-ratio: 4/5) {
-button.maplibregl-ctrl-zoom-in, button.maplibregl-ctrl-zoom-out {display:none}
+button.maplibregl-ctrl-zoom-in, button.maplibregl-ctrl-zoom-out, #設置面板 {display:none}
 }
 #設置面板 {position:fixed; right:10px; top:14em; writing-mode:vertical-rl; background-color:hsla(0,0%,100%,.3); backdrop-filter:blur(2px); white-space:nowrap}
 #底圖選單 {font-size:1em; background-color:transparent; border-radius:3px}
