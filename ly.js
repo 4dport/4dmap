@@ -1,3 +1,4 @@
+'use strict'
 const 黃赤交角 = 23.61749516;
 function 作緯綫(緯度=0){
 	const 坐標列 = [[-180,緯度],[180,緯度]];
@@ -38,28 +39,47 @@ const 黑體 = ["Noto Sans CJK KR","等线","微軟正黑體","黑体"];
 const 膚廓體 = ["南監體","統刊朙","Noto Serif CJK KR","宋体"];
 const 隸書 = ["漢文隸書","隶书"];
 const 語文候補列 = ["coalesce", ["get","name:zh-Hant"],["get","name:zh"],["get","name:ko-Hani"],["get","name"],["get","name:ja"]];
-const 色 = {"馳道":["interpolate",["linear"],["zoom"],15,"#fc8",17,"hsl(211, 30%, 55%)"], "幹路":"hsl(211, 30%, 65%)", "一級路":"hsl(208, 24%, 70%)", "二級路":"hsl(208, 15%, 70%)", "三級路":"hsl(208, 15%, 70%)", "局域路":"hsl(208, 15%, 90%)", "巷":"#fff", "步道": "hsl(30, 35%, 73%)",
-	"馳道緣":["interpolate",["linear"],["zoom"],15,"#e9ac77",17,"hsl(8, 72%, 60%)"], "幹路緣":"hsl(8, 72%, 69%)", "一二三級路緣":"hsl(211, 30%, 45%)", "局域路緣":"hsl(208, 5%, 70%)", "巷緣": "#cfcdca",
+const 色 = {"馳道":["interpolate",["linear"],["zoom"],15,"#fc8",17,"hsl(211, 30%, 55%)"], "幹路":"hsl(211, 30%, 65%)", "一級路":"hsl(208, 24%, 70%)", "二級路":"hsl(208, 15%, 70%)", "三級路":["interpolate",["linear"],["zoom"],11,"hsl(208, 0%, 70%)",13,"hsl(208, 15%, 70%)"], "局域路":"hsl(208, 15%, 90%)", "巷":"#fff", "步道": "hsl(30, 35%, 73%)",
+	"馳道緣":["interpolate",["linear"],["zoom"],15,"#e9ac77",17,"hsl(8, 72%, 60%)"], "幹路緣":["interpolate",["linear"],["zoom"],7,"hsl(8, 0%, 69%)",8,"hsl(8, 72%, 69%)"], "一二三級路緣":"hsl(211, 30%, 45%)", "局域路緣":"hsl(208, 5%, 70%)", "巷緣": "#cfcdca",
 	"邑軌":"#bbb", "長途軌":"#555", "軌間":"#fff",
-	"水名":"rgb(0, 10, 154)"//#495e91
+	"國界粗綫":"hsl(270,70%,66%)", "國界中心綫":"#c19", "政區界綫":"hsl(270,70%,36%)",
+	"郡縣名":"#000", "鄉村名":"#111", "水名":"rgb(0, 10, 154)"//#495e91
 };
-const 路寬 = {"馳":["interpolate",["exponential", 1.2],["zoom"],
-		6.5,0, 7,0.5, 20,18
-	], "幹":["interpolate",["exponential", 1.2],["zoom"],
-		6.5,0, 7,0.5, 20,18
-	], "一級":["interpolate",["exponential", 1.2],["zoom"],
-		8.5,0, 9,0.5, 20,18
-	], "二級":["interpolate",["exponential", 1.2],["zoom"],
-		6.5,0, 8,0.5, 20,13
-	], "三級":["interpolate",["exponential", 1.2],["zoom"],
-		7.5,0, 9,0.5, 20,12
-	], "聮":["interpolate",["exponential", 1.2],["zoom"],
-		12.5,0, 13,1.5, 14,2.5, 20,11.5
-	], "局域":["interpolate",["exponential", 1.2],["zoom"],
-		13.5,0, 14,2.5, 20,11.5
-	], "巷":["interpolate",["exponential", 1.2],["zoom"],
-		15.5,0, 16,2, 20,9
-	], "步":["interpolate",["exponential", 1.2],["zoom"],
+const 路寬 = {"馳道緣":["interpolate",["exponential", 1.5],["zoom"],
+		4,0, 5,0.4, 6,0.6, 7,1.5, 12,7, 18,22, 24,704
+	], "馳":["interpolate",["exponential", 1.5],["zoom"],
+		6.5,0, 7,0.5, 12,6, 18,18, 24,700
+	], "幹路緣"://["interpolate",["linear"],["zoom"],6,0, 7,2, 10,4, 14,6, 16,12, 18,36, 19,74, 20,144]
+	["interpolate",["exponential", 1.5],["zoom"],
+		6,0, 7,1.5, 9,2.5, 11,5, 18,21, 24,504
+	], "幹"://["interpolate",["linear"],["zoom"],6,0, 7,1, 10,3, 14,5, 16,10, 18,34, 19,70, 20,140]
+	["interpolate",["exponential", 1.5],["zoom"],
+		5,0, 7,1.5, 9,1.5, 11,4, 18,17, 24,500
+	], "一級路緣":["interpolate",["exponential", 1.5],["zoom"],
+		7,0, 8,0.6, 9,1.6, 11,4, 18,19, 24,304
+	], "一級":["interpolate",["exponential", 1.5],["zoom"],
+		7,0, 8,0.6, 9,0.8, 11,3, 18,15, 24,300
+	], "二級路緣":["interpolate",["exponential", 1.5],["zoom"],
+		8,0.5, 9,1, 11,3, 18,17, 24,204
+	], "二級":["interpolate",["exponential", 1.5],["zoom"],
+		8,0.5, 9,1, 11,2, 18,13, 24,200
+	], "三級路緣":["interpolate",["exponential", 1.5],["zoom"],
+		9,0.5, 11,1.5, 12,3, 18,16, 24,104
+	], "三級":["interpolate",["exponential", 1.5],["zoom"],
+		9,0.5, 11,1.5, 12,2, 18,12, 24,100
+	], "聮路緣":["interpolate",["exponential", 1.5],["zoom"],
+		12,1, 13,3, 14,4, 18,15, 24,64
+	], "聮":["interpolate",["exponential", 1.5],["zoom"],
+		12.5,0, 13,1.5, 14,2.5, 18,11.5, 24,60
+	], "局域路緣":["interpolate",["exponential", 1.5],["zoom"],
+		12,0.5, 13,1, 14,4, 19,15, 24,64
+	], "局域":["interpolate",["exponential", 1.5],["zoom"],
+		13.5,0, 14,2.5, 19,11.5, 24,60
+	], "巷緣":["interpolate",["exponential", 1.5],["zoom"],
+		15,1, 16,4, 19,12, 24,44
+	], "巷":["interpolate",["exponential", 1.5],["zoom"],
+		15.5,0, 16,2, 19,9, 24,40
+	], "步":["interpolate",["exponential", 1.5],["zoom"],
 		15,1.2, 20,4
 	], "軌內":["interpolate",["exponential", 1.3],["zoom"],
 		12,2, 20,6
@@ -77,7 +97,7 @@ const 共樣式 = {
 			"text-ignore-placement": false
 		},
 		paint: {
-			"text-color": "#111111",
+			"text-color": 色["鄉村名"],
 			"text-halo-color": "#ffffff",
 			"text-opacity": ["interpolate", ["linear"], ["zoom"], 7,0.3, 8.5,1],
 			"text-halo-width": 1
@@ -94,7 +114,7 @@ const 共樣式 = {
 			"text-ignore-placement": false
 		},
 		paint: {
-			"text-color": "#000",
+			"text-color": 色["郡縣名"],
 			"text-halo-color": "#ffe",
 			"text-opacity": ["interpolate", ["linear"], ["zoom"], 6,0.3, 8,1],
 			"text-halo-width": 1.5
@@ -102,7 +122,7 @@ const 共樣式 = {
 	},
 	省轄縣點: {
 		paint: {
-			"text-color": "#000",
+			"text-color": 色["郡縣名"],
 			"text-halo-color": "#fff",
 			"text-opacity": ["interpolate", ["linear"], ["zoom"], 5,0.1, 6,0.5, 7.3,1],
 			"text-halo-width": 2
@@ -110,7 +130,7 @@ const 共樣式 = {
 	},
 	郡點:{
 		paint: {
-			"text-color": "#000",
+			"text-color": 色["郡縣名"],
 			"text-halo-color": "#fff",
 			"text-halo-width": ["interpolate", ["linear"], ["zoom"], 5,1, 8,2.5]
 		}
@@ -134,7 +154,7 @@ const 共樣式 = {
 	國界粗綫:{
 		layout: {"line-cap": "round", "line-join": "round"},
 		paint: {
-			"line-color": "hsla(270,70%,66%,0.5)",
+			"line-color": 色["國界粗綫"],
 			"line-opacity": ["interpolate",["linear"],["zoom"],
 				1,0, 4,1
 			],
@@ -146,7 +166,7 @@ const 共樣式 = {
 	國界中心綫:{
 		layout: {"line-cap": "round", "line-join": "round"},
 		paint: {
-			"line-color": "#c19",
+			"line-color": 色["國界中心綫"],
 			"line-opacity": ["interpolate",["linear"],["zoom"],
 				1,0.4, 4,1
 			],
@@ -157,21 +177,21 @@ const 共樣式 = {
 	},
 	中國省界:{
 		paint: {
-			"line-color": "hsl(270,70%,36%)",
+			"line-color": 色["政區界綫"],
 			"line-dasharray": [7,2,1,2],
 			"line-width": ["interpolate",["linear"],["zoom"], 4,1, 11,3]
 		}
 	},
 	郡界:{
 		paint: {
-			"line-color": "hsl(270,70%,36%)",
+			"line-color": 色["政區界綫"],
 			"line-dasharray": [6,2,1,2,1,2],
 			"line-width": ["interpolate",["linear"],["zoom"], 6,1, 12,3]
 		}
 	},
 	縣界:{
 		paint: {
-			"line-color": "hsl(270,70%,36%)",
+			"line-color": 色["政區界綫"],
 			"line-dasharray": [5,2,1,2,1,2,1,2],
 			"line-width": ["interpolate",["linear"],["zoom"], 8,1, 14,2]
 		}
@@ -251,7 +271,7 @@ const 共樣式 = {
 			"text-halo-width": 0.5
 		}
 	},
-	圖標:{
+	開放免費地圖圖標:{
 		"icon-image": ["match",["get", "subclass"],["florist", "furniture"],["get", "subclass"],["get", "class"]],
 		"text-anchor": "left", "text-field": 語文候補列,
 		"text-optional": true, "text-padding": 2,
@@ -341,7 +361,8 @@ const 諸層 = [{
 	"paint": {
 		"fill-color": "#21A675",
 		"fill-opacity": 0.2,
-		"fill-outline-color": "hsla(0,0%,0%,0.03)"
+		"fill-outline-color": "hsla(0,0%,0%,0.03)",
+		// "fill-pattern": "maplibre:park_11"
 	}
 },{
 	"id": "海底地形", "type": "color-relief", "source": "海底高程", "maxzoom": 9,
@@ -474,9 +495,7 @@ const 諸層 = [{
 		"line-opacity": ["interpolate",["linear"],["zoom"],
 			12,0, 12.5,1
 		],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			15,1, 16,4, 20,12
-		]
+		"line-width": 路寬["巷緣"]
 	}
 },{
 	"id": "隧-局域路緣", "type": "line",
@@ -489,9 +508,7 @@ const 諸層 = [{
 	"paint": {
 		"line-color": 色["局域路緣"], "line-opacity": 0.8,
 		"line-dasharray": [0.5, 0.25],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			12,0.5, 13,1, 14,4, 20,15
-		]
+		"line-width": 路寬["局域路緣"]
 	}
 },{
 	"id": "隧-馳道之匝道緣", "type": "line",
@@ -505,9 +522,7 @@ const 諸層 = [{
 	"paint": {
 		"line-color": 色["馳道緣"], "line-opacity": 0.8,
 		"line-dasharray": [0.5, 0.25],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			12,1, 13,3, 14,4, 20,15
-		]
+		"line-width": 路寬["聮路緣"]
 	}
 },{
 	"id": "隧-大路之匝道緣", "type": "line",
@@ -521,9 +536,7 @@ const 諸層 = [{
 	"paint": {
 		"line-color": 色["一二三級路緣"], "line-opacity": 0.8,
 		"line-dasharray": [0.5, 0.25],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			12,1, 13,3, 14,4, 20,15
-		]
+		"line-width": 路寬["聮路緣"]
 	}
 },{
 	"id": "隧-三級路緣", "type": "line",
@@ -537,9 +550,7 @@ const 諸層 = [{
 	"paint": {
 		"line-color": 色["一二三級路緣"], "line-opacity": 0.8,
 		"line-dasharray": [0.5, 0.25],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			9,1.5, 20,16
-		]
+		"line-width": 路寬["三級路緣"]
 	}
 },{
 	"id": "隧-二級路緣", "type": "line",
@@ -553,9 +564,7 @@ const 諸層 = [{
 	"paint": {
 		"line-color": 色["一二三級路緣"], "line-opacity": 0.8,
 		"line-dasharray": [0.5, 0.25],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			8,1.5, 20,17
-		]
+		"line-width": 路寬["二級路緣"]
 	}
 },{
 	"id": "隧-一級路緣", "type": "line",
@@ -569,9 +578,7 @@ const 諸層 = [{
 	"paint": {
 		"line-color": 色["一二三級路緣"], "line-opacity": 0.8,
 		"line-dasharray": [0.5, 0.25],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			7,0, 8,0.6, 9,1.5, 20,22
-		]
+		"line-width": 路寬["一級路緣"]
 	}
 },{
 	"id": "隧-幹路緣", "type": "line",
@@ -588,9 +595,7 @@ const 諸層 = [{
 			5,0, 7,0.8
 		],
 		"line-dasharray": [0.5, 0.25],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			5,0.4, 6,0.6, 7,1.5, 20,22
-		]
+		"line-width": 路寬["幹路緣"]
 	}
 },{
 	"id": "隧-人行道", "type": "line",
@@ -706,9 +711,7 @@ const 諸層 = [{
 	"paint": {
 		"line-color": 色["馳道緣"], "line-opacity": 0.8,
 		"line-dasharray": [0.5, 0.25],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			5,0.4, 6,0.6, 7,1.5, 20,22
-		]
+		"line-width": 路寬["馳道緣"]
 	}
 },{
 	"id": "隧-馳道之匝道", "type": "line",
@@ -774,9 +777,7 @@ const 諸層 = [{
 	"layout": {"line-cap": "round", "line-join": "round"},
 	"paint": {
 		"line-color": 色["巷緣"],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			15,1, 16,4, 20,12
-		]
+		"line-width": 路寬["巷緣"]
 	}
 },{
 	"id": "路-局域緣", "type": "line",
@@ -792,9 +793,7 @@ const 諸層 = [{
 		"line-opacity": ["interpolate",["linear"],["zoom"],
 			12,0, 12.5,1
 		],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			12,0.5, 13,1, 14,4, 20,15
-		]
+		"line-width": 路寬["局域路緣"]
 	}
 },{
 	"id": "大路之匝道緣", "type": "line",
@@ -808,9 +807,7 @@ const 諸層 = [{
 	"layout": {"line-join": "round"},
 	"paint": {
 		"line-color": 色["一二三級路緣"],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			12,1, 13,3, 14,4, 20,15
-		]
+		"line-width": 路寬["聮路緣"]
 	}
 },{
 	"id": "路-三級緣", "type": "line",
@@ -823,9 +820,7 @@ const 諸層 = [{
 	"layout": {"line-cap": "butt", "line-join": "round"},
 	"paint": {
 		"line-color": 色["一二三級路緣"],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			9,1.5, 20,16
-		]
+		"line-width": 路寬["三級路緣"]
 	}
 },{
 	"id": "路-二級緣", "type": "line",
@@ -841,9 +836,7 @@ const 諸層 = [{
 		"line-opacity": ["interpolate",["linear"],["zoom"],
 			8,0, 9,1
 		],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			8,1.5, 20,17
-		]
+		"line-width": 路寬["二級路緣"]
 	}
 },{
 	"id": "路-一級緣", "type": "line",
@@ -860,9 +853,7 @@ const 諸層 = [{
 		"line-opacity": ["interpolate",["linear"],["zoom"],
 			7,0, 8,1
 		],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			7,0, 8,0.6, 9,1.5, 20,22
-		]
+		"line-width": 路寬["一級路緣"]
 	}
 },{
 	"id": "幹路緣", "type": "line",
@@ -879,9 +870,7 @@ const 諸層 = [{
 		"line-opacity": ["interpolate",["linear"],["zoom"],
 			5,0, 7,1
 		],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			5,0, 6,0.6, 7,1.5, 20,22
-		]
+		"line-width": 路寬["幹路緣"]
 	}
 },{
 	"id": "馳道之匝道緣", "type": "line",
@@ -894,9 +883,7 @@ const 諸層 = [{
 	"layout": {"line-cap": "round", "line-join": "round"},
 	"paint": {
 		"line-color": 色["馳道緣"],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			12,1, 13,3, 14,4, 20,15
-		]
+		"line-width": 路寬["聮路緣"]
 	}
 },{
 	"id": "巷", "type": "line",
@@ -1003,9 +990,7 @@ const 諸層 = [{
 	"layout": {"line-cap": "butt", "line-join": "round"},
 	"paint": {
 		"line-color": 色["馳道緣"],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			4,0, 5,0.4, 6,0.6, 7,1.5, 20,22
-		]
+		"line-width": 路寬["馳道緣"]
 	}
 },{
 	"id": "馳道之匝道", "type": "line",
@@ -1109,7 +1094,7 @@ const 諸層 = [{
 	],
 	"paint": {
 		"line-color": "hsl(35, 6%, 50%)",
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
+		"line-width": ["interpolate",["exponential", 1.5],["zoom"],
 			15,2, 20,14
 		]
 	}
@@ -1120,7 +1105,7 @@ const 諸層 = [{
 	"filter": ["==",["get", "subclass"], "steps"],
 	"paint": {
 		"line-color": "hsl(35, 6%, 90%)",
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
+		"line-width": ["interpolate",["exponential", 1.5],["zoom"],
 			15,1.5, 20,12
 		]
 	}
@@ -1132,7 +1117,7 @@ const 諸層 = [{
 	"paint": {
 		"line-color": 色["步道"],
 		"line-dasharray": [1, 0.3],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
+		"line-width": ["interpolate",["exponential", 1.5],["zoom"],
 			15,1, 20,8
 		]
 	}
@@ -1140,7 +1125,7 @@ const 諸層 = [{
 "平面橋",
 {
 	"id": "陸國界无爭議者粗綫",
-	"type": "line",
+	"type": "line", "minzoom": 2,
 	"source": "開放免費地圖", "source-layer": "boundary",
 	"filter": ["all",
 		["==", ["get", "admin_level"], 2],
@@ -1170,7 +1155,7 @@ const 諸層 = [{
 	"paint": 共樣式["國界中心綫"]["paint"]
 },{
 	"id": "陸國界天地圖粗綫",
-	"type": "line", "maxzoom":7,
+	"type": "line", "minzoom": 2, "maxzoom":7,
 	"source": "中國政區界綫", "source-layer": "中國國境綫已定",
 	"layout": 共樣式["國界粗綫"]["layout"],
 	"paint": 共樣式["國界粗綫"]["paint"]
@@ -1249,7 +1234,7 @@ const 諸層 = [{
 	"source": "中國政區界綫", "source-layer": "中國海疆綫",
 	"minzoom": 2,
 	"paint": {
-		"line-color": "hsla(270,70%,66%,0.5)",
+		"line-color": 色["國界粗綫"],
 		"line-opacity": ["interpolate",["linear"],["zoom"],
 			1,0, 4,1
 		],
@@ -1263,7 +1248,7 @@ const 諸層 = [{
 	"source": "中國政區界綫", "source-layer": "中國海疆綫",
 	"minzoom": 2,
 	"paint": {
-		"line-color": "#c19",
+		"line-color": 色["國界中心綫"],
 		"line-width": ["interpolate",["linear"],["zoom"],
 			3,1, 12,3
 		]
@@ -1605,7 +1590,7 @@ const 諸層 = [{
 	"minzoom": 15,
 	"filter": ["==",["get", "class"], "bus"],
 	"layout": {
-		...共樣式["圖標"], "icon-size": 0.6, "text-offset": [0.6, 0],
+		...共樣式["開放免費地圖圖標"], "icon-size": 0.6, "text-offset": [0.6, 0],
 		"text-font": ["step", ["zoom"], ["literal", 黑體], 13, ["literal", 膚廓體]],
 		"text-max-width": 7,
 		"text-size": ["interpolate",["linear"],["zoom"], 14,10, 16,14],
@@ -1626,7 +1611,7 @@ const 諸層 = [{
 		["!=", ["get", "subclass"], "station"]
 	],
 	"layout": {
-		...共樣式["圖標"], "icon-size": 0.7, "text-offset": [0.6, 0],
+		...共樣式["開放免費地圖圖標"], "icon-size": 0.7, "text-offset": [0.6, 0],
 		"text-font": ["step", ["zoom"], ["literal", 黑體], 13, ["literal", 膚廓體]],
 		"text-max-width": 7,
 		"text-size": ["interpolate",["linear"],["zoom"], 12,10, 18,16],
@@ -1644,10 +1629,11 @@ const 諸層 = [{
 	"minzoom": 11, "maxzoom": 20,
 	"filter": ["all",
 		["==",["get", "class"], "railway"],
-		["==", ["get", "subclass"], "station"]
+		["==", ["get", "subclass"], "station"],
+		["==", ["get", "rank"], 1]
 	],
 	"layout": {
-		...共樣式["圖標"], "text-radial-offset": ["interpolate",["linear"],["zoom"], 11,1.2,14,0.6],
+		...共樣式["開放免費地圖圖標"], "text-radial-offset": ["interpolate",["linear"],["zoom"], 11,1.2,14,0.6],
 		"text-font": ["step", ["zoom"], ["literal", 黑體], 13, ["literal", 隸書]],
 		"text-max-width": 9,
 		"text-size": ["interpolate",["linear"],["zoom"], 12,10, 18,20],
@@ -1827,8 +1813,8 @@ function 填層(){
 	"layout": {"line-join": "round"},
 	"paint": {
 		"line-color": 色["馳道緣"],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			12,1, 13,3, 14,4, 20,19
+		"line-width": ["interpolate",["exponential", 1.5],["zoom"],
+			12,1, 13,3, 14,4, 18,19, 24,68
 		]
 	}
 },{
@@ -1843,12 +1829,12 @@ function 填層(){
 	"layout": {"line-join": "round"},
 	"paint": {
 		"line-color": 色["一二三級路緣"],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			12,1, 13,3, 14,4, 20,19
+		"line-width": ["interpolate",["exponential", 1.5],["zoom"],
+			12,1, 13,3, 14,4, 18,19, 24,68
 		]
 	}
 },{
-	"id": "橋"+String(l)+"二、三級路緣", "type": "line",
+	"id": "橋"+String(l)+"三級路緣", "type": "line",
 	"source": "開放免費地圖", "source-layer": "transportation",
 	"filter": ["all",
 		["==",["get", "brunnel"], "bridge"],
@@ -1860,8 +1846,25 @@ function 填層(){
 	"paint": {
 		"line-color": 色["一二三級路緣"],
 		"line-opacity": 1,
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			5,0.4, 7,0.6, 8,1.5, 20,21
+		"line-width": ["interpolate",["exponential", 1.5],["zoom"],
+			8,1.5, 18,21, 24,208
+		]
+	}
+},{
+	"id": "橋"+String(l)+"二級路緣", "type": "line",
+	"source": "開放免費地圖", "source-layer": "transportation",
+	"filter": ["all",
+		["==",["get", "brunnel"], "bridge"],
+		["match",["get", "class"],["secondary", "tertiary"], true, false],
+		["!=", ["get", "ramp"], 1],
+		濾層條件
+	],
+	"layout": {"line-join": "round"},
+	"paint": {
+		"line-color": 色["一二三級路緣"],
+		"line-opacity": 1,
+		"line-width": ["interpolate",["exponential", 1.5],["zoom"],
+			8,1.5, 18,21, 24,108
 		]
 	}
 },{
@@ -1876,8 +1879,8 @@ function 填層(){
 	"layout": {"line-join": "round"},
 	"paint": {
 		"line-color": 色["一二三級路緣"],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			5,0.4, 6,0.6, 7,1.5, 20,26
+		"line-width": ["interpolate",["exponential", 1.5],["zoom"],
+			5,0.4, 6,0.6, 7,1.5, 18,26, 24,308
 		]
 	}
 },{
@@ -1895,8 +1898,8 @@ function 填層(){
 		"line-opacity": ["interpolate",["linear"],["zoom"],
 			5,0, 7,1
 		],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			5,0.4, 6,0.6, 7,1.5, 20,26
+		"line-width": ["interpolate",["exponential", 1.5],["zoom"],
+			5,0.4, 6,0.6, 7,1.5, 18,26, 24,508
 		]
 	}
 },{
@@ -1914,8 +1917,8 @@ function 填層(){
 		"line-opacity": ["interpolate",["linear"],["zoom"],
 			12,0, 12.5,1
 		],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			12,0.5, 13,1, 14,4, 20,16
+		"line-width": ["interpolate",["exponential", 1.5],["zoom"],
+			12,0.5, 13,1, 14,4, 19,16, 24,38
 		]
 	}
 },{
@@ -1933,8 +1936,8 @@ function 填層(){
 		"line-opacity": ["interpolate",["linear"],["zoom"],
 			12,0, 12.5,1
 		],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			12,0.5, 13,1, 14,6, 20,20
+		"line-width": ["interpolate",["exponential", 1.5],["zoom"],
+			12,0.5, 13,1, 14,6, 19,20, 24,68
 		]
 	}
 },{
@@ -1948,7 +1951,7 @@ function 填層(){
 	],
 	"paint": {
 		"line-color": "#f8f4f0", "line-opacity": 0.8,
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
+		"line-width": ["interpolate",["exponential", 1.5],["zoom"],
 			15,1.2, 20,12
 		]
 	}
@@ -2076,8 +2079,8 @@ function 填層(){
 	"layout": {"line-join": "round"},
 	"paint": {
 		"line-color": 色["馳道緣"],
-		"line-width": ["interpolate",["exponential", 1.2],["zoom"],
-			5,0.4, 6,0.6, 7,1.5, 20,26
+		"line-width": ["interpolate",["exponential", 1.5],["zoom"],
+			5,0.4, 6,0.6, 7,1.5, 18,26, 24,708
 		]
 	}
 },{
