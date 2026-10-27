@@ -1437,6 +1437,69 @@ const 諸層 = [{
 		"text-halo-width": 1.5
 	}
 },{
+	"id": "普通峯", "type": "symbol",
+	"source": "開放免費地圖", "source-layer": "mountain_peak",
+	"filter": ["==", ["get", "class"], "peak"],
+	"layout": {
+		"text-field": 語文候補列,
+		"text-size": ["interpolate",["linear"],["zoom"], 7,10, 16,14],
+		"text-writing-mode": ["vertical"],
+		"text-variable-anchor": ["top", "bottom"],
+		"text-radial-offset": 0.9,
+		"icon-image": "mountain_11"
+	},
+	"paint": {
+		"text-color": "hsl(143, 90%, 10%)",
+		"text-halo-color": "hsl(56, 68%, 85%)",
+		"text-halo-width": 1
+	}
+},{
+	"id": "火山", "type": "symbol",
+	"source": "開放免費地圖", "source-layer": "mountain_peak",
+	"filter": ["==", ["get", "class"], "volcano"],
+	"layout": {
+		"text-field": 語文候補列,
+		"text-size": ["interpolate",["linear"],["zoom"], 7,10, 16,14],
+		"text-writing-mode": ["vertical"],
+		"text-variable-anchor": ["top", "bottom"],
+		"text-radial-offset": 0.9,
+		"icon-image": "mountain_11"
+	},
+	"paint": {
+		"text-color": "hsl(0, 90%, 15%)",
+		"text-halo-color": "#eee",
+		"text-halo-width": 1
+	}
+},{
+	"id": "陘坳", "type": "symbol",
+	"source": "開放免費地圖", "source-layer": "mountain_peak",
+	"filter": ["==", ["get", "class"], "saddle"],
+	"layout": {
+		"text-field": 語文候補列,
+		"text-size": ["interpolate",["linear"],["zoom"], 7,10, 16,14],
+		"text-writing-mode": ["vertical"]
+	},
+	"paint": {
+		"text-color": "hsl(36, 88%, 15%)",
+		"text-halo-color": "hsl(36, 88%, 95%)",
+		"text-halo-width": 1
+	}
+},{
+	"id": "嶺", "type": "symbol",
+	"source": "開放免費地圖", "source-layer": "mountain_peak",
+	"filter": ["in", ["get", "class"], ["literal",["ridge","arete"]]],
+	"layout": {
+		"symbol-placement": "line",
+        "symbol-spacing": 350,
+		"text-field": 語文候補列,
+		"text-size": ["interpolate",["linear"],["zoom"], 6,10, 14,14],
+	},
+	"paint": {
+		"text-color": "hsl(143, 90%, 15%)",
+		"text-halo-color": "hsl(36, 88%, 85%)",
+		"text-halo-width": 1
+	}
+},{
 	id: "點-大陸鄉名",
 	type: "symbol",
 	source: "鄉以上地點",
