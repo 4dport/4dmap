@@ -8,3 +8,8 @@ button.maplibregl-ctrl-zoom-in, button.maplibregl-ctrl-zoom-out {display:none}
 #設置面板 {position:fixed; right:10px; top:14em; writing-mode:vertical-rl; background-color:hsla(0,0%,100%,.3); backdrop-filter:blur(2px); white-space:nowrap}
 #底圖選單 {font-size:1em; background-color:transparent; border-radius:3px}
 #nl-badge-frame {opacity:0.6; backdrop-filter:blur(2px)}
+.user-heading-arrow {position: absolute; left: 1.5px; bottom: 100%; width: 0; height: 0;
+border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 9px solid #1da1f2;
+transform-origin: center 16.5px; pointer-events: none; filter: drop-shadow(0 0 2px white); z-index: -1
+}
+.針字 {position: absolute; left:1px; top:0; width:13px; height:13px; font-size: 13px; color:#ffd; text-align: center; line-height: 16px}

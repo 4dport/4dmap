@@ -5,9 +5,10 @@ if (/\sQQ|micromessenger/i.test(navigator.userAgent.toLowerCase())){
 	document.body.appendChild(全遮板);
 }
 import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.15.0/dist/maplibre-gl.mjs';
-import { TerminatorLayer } from "./terminator-layer.js";
+import { getSubsolarPoint, TerminatorLayer } from "./terminator-layer.js";
 // import { addTreeTerrainLayer } from "./tree-terrain-layer.js";
 import { 轉瓦內字 } from './cvt/cc.js';
+import { Orienting } from './nav.js?t=f';
 const pmProtocol = new pmtiles.Protocol();
 maplibregl.addProtocol('pmtiles',pmProtocol.tile);
 const PMTILES_NAME = ['鄉以上地點','中國无港澳臺海域','中國政區界','海深','公海和南極'];
@@ -131,15 +132,32 @@ export const lmap = new maplibregl.Map({
 		// light: {"anchor": "map", "color": "#fff", "position": [1.4, -180, 90], "intensity": 0.1},
 		sky: {"sky-color":"hsl(197, 71%, 63%)", "horizon-color":"hsl(213, 76%, 65%)", "atmosphere-blend": 0.25},
 		projection: {"type": "globe"},
-		sprite: "https://tiles.openfreemap.org/sprites/ofm_f384/ofm"
+		sprite: [{id:"default", "url":"https://tiles.openfreemap.org/sprites/ofm_f384/ofm"},
+			{id:"maplibre", "url":"https://demotiles.maplibre.org/styles/osm-bright-gl-style/sprite"}
+		]
 	},
 	minZoom: 1, maxZoom: 21, maxPitch: 85
 });
+function 天色(m){
+	const 經 = m.getCenter().lng*Math.PI/180, 緯 = m.getCenter().lat*Math.PI/180;
+	const 日躔點 = getSubsolarPoint();
+	const 日赤經 = 日躔點["longitude"]*Math.PI/180, 日赤緯 = 日躔點["latitude"]*Math.PI/180;
+	const 時角 = 經 - 日赤經;
+	var 日出地角正弦 = Math.sin(緯) * Math.sin(日赤緯) + Math.cos(緯) * Math.cos(日赤緯) * Math.cos(時角);
+	日出地角正弦 = Math.max(-1, Math.min(日出地角正弦, 1));
+	const 日出地角 = Math.asin(日出地角正弦)*180/Math.PI;
+	var 亮度 = 50;
+	if (日出地角<0){
+		亮度 = Math.round(50/(1+Math.exp(-日出地角-9)));// 反乙
+	}
+	m.setSky({"sky-color":"hsl(197, 71%, "+String(13+亮度)+"%)", "horizon-color":"hsl(213, 76%, "+String(15+亮度)+"%)"});
+}
 lmap.on('style.load', () => {
 	let 昏旦 = new TerminatorLayer({updateInterval: 30000});
 	const layers = lmap.getStyle().layers;
 	const firstSymbol = layers.find(layer => layer.type === "symbol");
 	lmap.addLayer(昏旦, firstSymbol?.id);
+	天色(lmap);
 });
 lmap.on('zoom', () => {
 	const z = lmap.getZoom();
@@ -162,12 +180,7 @@ lmap.addControl(
 		exaggeration: 1
 	})
 );
-lmap.addControl(
-	new maplibregl.GeolocateControl({
-		positionOptions: {enableHighAccuracy: true},
-		trackUserLocation: true
-	})
-);
+const 朝向 = new Orienting(lmap, maplibregl);
 lmap.setTransformRequest((url, resourceType) => {
 	if (url.startsWith('https://tiles.openfreemap.org/') && resourceType === 'Tile') {
 		return { url: ccProtocol + '://' + url };
@@ -187,10 +200,19 @@ document.getElementById("底圖選單").addEventListener('change',function(){
 	}
 });
 lmap.on('moveend',()=>{
+	if (lmap.getZoom()>11) 天色(lmap);
 	localStorage.setItem("經度", lmap.getCenter().lng.toString());
 	localStorage.setItem("緯度", lmap.getCenter().lat.toString());
 });
 lmap.on('zoomend',()=>{
 	localStorage.setItem("縮放級", lmap.getZoom().toString());
+});
+lmap.on("click", (e) => {
+	const features = lmap.queryRenderedFeatures(e.point);
+	for (const f of features) {
+		if (f.properties.class === "railway") {
+			console.log(f.properties);
+		}
+	}
 });
 // addTreeTerrainLayer(lmap);
