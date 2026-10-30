@@ -301,7 +301,7 @@ const 諸層 = [{
 	"filter": ["==",["get", "class"], "hospital"],
 	"paint": {"fill-color": "#fef"}
 },{
-	"id": "公園一", "type": "fill",
+	"id": "自然區", "type": "fill",
 	"source": "開放免費地圖", "source-layer": "park",
 	"paint": {
 		"fill-color": "#d8e8c8",
@@ -309,9 +309,9 @@ const 諸層 = [{
 		"fill-outline-color": "rgb(95, 208, 100)"
 	}
 },{
-	"id": "公園二", "type": "fill",
+	"id": "園囿", "type": "fill",
 	"source": "開放免費地圖", "source-layer": "landcover",
-	"filter":["==", ["get", "subclass"], "park"],
+	"filter":["in",["get","subclass"],["literal",["park","garden","golf_course"]]],
 	"paint": {
 		"fill-color": "#d8e8c8",
 		"fill-opacity": 0.5,
@@ -348,7 +348,7 @@ const 諸層 = [{
 	"source": "開放免費地圖", "source-layer": "landcover",
 	"filter": ["all",
 		["==",["get", "class"],"grass"],
-		["!=", ["get", "subclass"], "park"]
+		["!",["in",["get","subclass"],["literal",["park","garden","nature_reserve","golf_course"]]]]
 	],
 	"paint": {
 		"fill-color": "hsl(90, 41%, 80%)",
@@ -1302,6 +1302,22 @@ const 諸層 = [{
 		"fill-extrusion-opacity": 0.9
 	}
 },{
+	id:"自然區名", type:"symbol", source:"開放免費地圖", "source-layer": "park",
+	layout:{
+		"text-field": 語文候補列,
+		"text-font": 黑體,
+		"text-size": ["interpolate", ["linear"], ["zoom"], 12,10, 18,14],
+		"text-writing-mode": ["vertical"],
+		"symbol-avoid-edges": true,
+		"text-allow-overlap": false,
+		"text-ignore-placement": false
+	},
+	paint: {
+		"text-color": "hsl(148, 30%, 5%)",
+		"text-halo-color": "hsl(148, 30%, 95%)",
+		"text-halo-width": 1.2
+	}
+},{
 	"id": "馳道名", "type": "symbol",
 	"source": "開放免費地圖", "source-layer": "transportation_name",
 	"minzoom": 7,
@@ -1630,7 +1646,7 @@ const 諸層 = [{
 	id:"點標", type:"symbol", source:"開放免費地圖", "source-layer": "poi", "minzoom": 12,
 	filter: ["all",
 		["has", "name"],
-		["match",["get", "class"],["airport", "bus", "railway"], false, true],
+		["match",["get", "class"],["airport","bus","railway","nature_reserve","park","garden","golf_course"], false, true],
 		// ["!", ["has", "building:part"]]
 	],
 	layout:{
@@ -1727,6 +1743,22 @@ const 諸層 = [{
 		"text-halo-blur": 0.5,
 		"text-halo-color": "#fff",
 		"text-halo-width": 1
+	}
+},{
+	id:"園囿名", type:"symbol", source:"開放免費地圖", "source-layer": "poi",
+	"filter":["in",["get","subclass"],["literal",["park","garden","golf_course"]]],
+	layout:{
+		"text-field": 語文候補列,
+		"text-font": 黑體,
+		"text-size": ["interpolate", ["linear"], ["zoom"], 12,10, 18,14],
+		"text-writing-mode": ["vertical"],
+		"text-allow-overlap": false,
+		"text-ignore-placement": false
+	},
+	paint: {
+		"text-color": "hsl(148, 30%, 5%)",
+		"text-halo-color": "hsl(148, 30%, 95%)",
+		"text-halo-width": 1.2
 	}
 },{
 	"id":"中國大陸之岬角", "type":"symbol",
