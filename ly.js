@@ -1314,6 +1314,7 @@ const 諸層 = [{
 	},
 	paint: {
 		"text-color": "hsl(148, 30%, 5%)",
+		"text-opacity": ["interpolate", ["linear"], ["zoom"], 6,0.5, 7,1],
 		"text-halo-color": "hsl(148, 30%, 95%)",
 		"text-halo-width": 1.2
 	}
@@ -1513,6 +1514,24 @@ const 諸層 = [{
 	"paint": {
 		"text-color": "hsl(143, 90%, 15%)",
 		"text-halo-color": "hsl(36, 88%, 85%)",
+		"text-halo-width": 1
+	}
+},{
+	"id": "點-村", "type": "symbol",
+	"source": "開放免費地圖", "source-layer": "place",
+	"minzoom": 10, "maxzoom": 19,
+	"filter": ["==",["get", "class"], "village"],
+	"layout": {
+		"text-field": 語文候補列,
+		"text-font": 膚廓體,
+		"text-max-width": 7,
+		"text-writing-mode": ["vertical"],
+		"text-size": ["interpolate",["linear"],["zoom"], 10,11, 18,16]
+	},
+	"paint": {
+		"text-color": 色["鄉村名"],
+		"text-halo-blur": 1,
+		"text-halo-color": "#fff",
 		"text-halo-width": 1
 	}
 },{
