@@ -252,7 +252,7 @@ const 共樣式 = {
 		paint: {
 			"text-color": 色["水名"],
 			"text-halo-color": "#fff",
-			"text-halo-width": 0.5
+			"text-halo-width": 1
 		}
 	},
 	海底:{
