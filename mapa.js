@@ -5,8 +5,7 @@ if (/\sQQ|micromessenger/i.test(navigator.userAgent.toLowerCase())){
 	document.body.appendChild(全遮板);
 }
 import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.mjs';
-import { getSubsolarPoint, TerminatorLayer } from "./terminator-layer.js";
-// import { addTreeTerrainLayer } from "./tree-terrain-layer.js";
+import { getSubsolarPoint, TerminatorLayer } from './layer-terminator.js';
 import { 轉瓦內字 } from './cvt/cc.js';
 import { Orienting } from './nav.js?t=f';
 const pmProtocol = new pmtiles.Protocol();
@@ -188,7 +187,7 @@ lmap.setTransformRequest((url, resourceType) => {
 	return undefined;
 });
 // 測底圖延遟(lmap, true);
-setInterval(() => 測底圖延遟(lmap), 10000);
+setTimeout(() => 測底圖延遟(lmap), 5000);
 setTimeout(測瓦服務器延遟, 5000);
 document.getElementById("底圖選單").addEventListener('change',function(){
 	const 所選值 = this.selectedOptions[0].value;
@@ -199,6 +198,7 @@ document.getElementById("底圖選單").addEventListener('change',function(){
 		易圖層源(lmap, 所選值);
 	}
 });
+document.getElementById("底圖選單").addEventListener('click',()=>{測底圖延遟(lmap);});
 lmap.on('moveend',()=>{
 	if (lmap.getZoom()>11) 天色(lmap);
 	localStorage.setItem("經度", lmap.getCenter().lng.toString());
@@ -208,11 +208,12 @@ lmap.on('zoomend',()=>{
 	localStorage.setItem("縮放級", lmap.getZoom().toString());
 });
 lmap.on("click", (e) => {
-	const features = lmap.queryRenderedFeatures(e.point);
+	const features = lmap.queryRenderedFeatures(e.polygon);
 	for (const f of features) {
-		if (f.properties.class === "railway") {
+		if (f.properties.class === "park") {
 			console.log(f.properties);
 		}
 	}
 });
-// addTreeTerrainLayer(lmap);
+// import { addTreeTerrainLayer } from './layer-tree-terrain.js';
+// addTreeTerrainLayer(lmap, maplibregl.MercatorCoordinate);
