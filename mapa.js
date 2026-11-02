@@ -218,3 +218,4 @@ lmap.on("click", (e) => {
 });
 // import { addTreeTerrainLayer } from './layer-tree-terrain.js';
 // addTreeTerrainLayer(lmap, maplibregl.MercatorCoordinate);
+addTreeTerrainLayer(lmap);
