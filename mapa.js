@@ -8,6 +8,7 @@ import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-
 import { getSubsolarPoint, TerminatorLayer } from './layer-terminator.js';
 import { 轉瓦內字 } from './cvt/cc.js';
 import { Orienting } from './nav.js?t=f';
+import { addTreeTerrainLayer } from "./tree-terrain-layer.js?v=9";
 const pmProtocol = new pmtiles.Protocol();
 maplibregl.addProtocol('pmtiles',pmProtocol.tile);
 const PMTILES_NAME = ['鄉以上地點','中國无港澳臺海域','中國政區界','海深','公海和南極'];
