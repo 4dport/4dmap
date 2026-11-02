@@ -1665,7 +1665,7 @@ const 諸層 = [{
 	id:"點標", type:"symbol", source:"開放免費地圖", "source-layer": "poi", "minzoom": 12,
 	filter: ["all",
 		["has", "name"],
-		["match",["get", "class"],["airport","bus","railway","nature_reserve","park","garden","golf_course"], false, true],
+		["match",["get", "class"],["airport","bus","railway","nature_reserve","park","garden","golf_course", "restaurant","food_court","bakery"], false, true],
 		// ["!", ["has", "building:part"]]
 	],
 	layout:{
@@ -1681,6 +1681,22 @@ const 諸層 = [{
 		"text-color": "#2c3e50",
 		"text-halo-color": "#ffffff",
 		"text-halo-width": 1.2
+	}
+},{
+	id:"湌店名", type:"symbol", source:"開放免費地圖", "source-layer": "poi", "minzoom": 12,
+	filter: ["in",["get", "class"], ["literal", ["restaurant","food_court","bakery","fast_food"]]],
+	layout:{
+		"text-field": 語文候補列,
+		"text-font": 膚廓體,
+		"text-size": ["interpolate", ["linear"], ["zoom"], 15,10, 18,14],
+		"text-writing-mode": ["vertical"],
+		"text-allow-overlap": false,
+		"text-ignore-placement": false
+	},
+	paint: {
+		"text-color": "#000",
+		"text-halo-color": "#fff",
+		"text-halo-width": 1
 	}
 },{
 	"id": "公共汽車站名", "type": "symbol",
