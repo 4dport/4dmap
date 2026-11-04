@@ -17,16 +17,15 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
   ];
 
   let treeData = [];
-  let grownCells = new Set();   // 已长过树的格子 key = "gx,gy"
+  let grownCells = new Set();   // 已长过树的格子key = "gx,gy"
   let started = false;
   let variants = null;
-  let originMerc = null;        // 固定局部原点 mercator 坐标（初始化后不再变）
+  let originMerc = null;       
   let originLng = 0, originLat = 0;
   let layer = null;
   let refreshTimer = null;
   const TREE_MIN_ZOOM = 17;
 
-  // ---- 确定性哈希：同一格子每次生成的随机参数完全一致 ----
   function hash2(gx, gy, salt) {
     let h = (gx * 374761393) ^ (gy * 668265263) ^ (salt * 982451653);
     h = Math.imul(h ^ (h >>> 13), 1274126177);
@@ -34,13 +33,12 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
     return (h >>> 0) / 4294967295;
   }
 
-  // 经纬度 -> 相对固定原点的米制偏移 [east, north]
   function toEastNorth(lng, lat) {
     const m = maplibregl.MercatorCoordinate.fromLngLat([lng, lat], 0);
     const unit = originMerc.meterInMercatorCoordinateUnits();
     return [(m.x - originMerc.x) / unit, (originMerc.y - m.y) / unit];
   }
-  // 米制偏移 -> 经纬度
+ 
   function toLngLat(e, n) {
     const mLon = 111320 * Math.cos(originLat * Math.PI / 180);
     return [originLng + e / mLon, originLat + n / 111320];
@@ -98,7 +96,6 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
     return Promise.all(tasks);
   }
 
-  // 给单个网格点长一棵树（参数由 hash 决定，确定性）
   function pushTree(gx, gy) {
     const ang = hash2(gx, gy, 0) * Math.PI * 2 - Math.PI;
     const rad = hash2(gx, gy, 1) * JITTER_M;
@@ -115,7 +112,7 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
     });
   }
 
-  // 从一个多边形里长新树（跳过已长过的格子）
+  // 从一个多边形里长新树
   function growFromPolygon(co) {
     const outer = co[0].map(([lng, lat]) => toEastNorth(lng, lat));
     const holes = co.slice(1).map(h => h.map(([lng, lat]) => toEastNorth(lng, lat)));
@@ -169,8 +166,6 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
       }
     }
 
-    // 回收：动态算回收半径 = 当前视野对角线 × 2
-    // 这样屏幕上能看到的树（离中心最远 = 对角线/2）永远不会被删
     const c = lmap.getCenter();
     const [curE, curN] = toEastNorth(c.lng, c.lat);
     const b = lmap.getBounds();
@@ -192,7 +187,7 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
       return true;
     });
 
-    // 超 TOTAL_MAX：按距离排序，只留最近的 TOTAL_MAX 棵
+    // 超TOTAL_MAX：按距离排序，只留最近的TOTAL_MAX棵
     if (treeData.length > TOTAL_MAX) {
       treeData.sort((a, b) => {
         const da = (a.east - curE) ** 2 + (a.north - curN) ** 2;
@@ -225,7 +220,6 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
       return;
     }
 
-    // 初始化固定坐标系（只做一次，之后 origin 不再随平移变化）
     const c = lmap.getCenter();
     originLng = c.lng;
     originLat = c.lat;
@@ -257,7 +251,6 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
         this.renderer = new THREE.WebGLRenderer({ canvas: map.getCanvas(), context: gl, antialias: false });
         this.renderer.autoClear = false;
       },
-      // 树数据变化后：判断是否需要扩容重建，否则只重写 instanceMatrix
       onTreesChanged() {
         if (!this.scene) return;
         const counts = new Array(VARIANTS).fill(0);
@@ -269,7 +262,7 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
         }
 
         if (needRebuild) {
-          // 销毁旧的 InstancedMesh
+          // 销毁旧的InstancedMesh
           if (this.instanced) {
             for (const arr of this.instanced) {
               if (!arr) continue;
@@ -345,7 +338,7 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
       return;
     }
 
-    // 高程更新：只处理 elev 还没取到的新树
+    // 高程更新：只处理elev还没取到的新树
     function updateHeights() {
       if (!lmap.getTerrain()) return;
       let changed = false;
