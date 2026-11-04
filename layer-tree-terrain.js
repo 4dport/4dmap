@@ -1,4 +1,4 @@
-export function addTreeTerrainLayer(lmap, maplibregl) {
+export function addTreeTerrainLayer(lmap,maplibregl) {
   if (typeof THREE === 'undefined') return;
   if (!THREE.GLTFLoader) {
     console.warn('[tree] THREE.GLTFLoader 未加载');
