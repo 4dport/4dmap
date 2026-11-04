@@ -1,6 +1,4 @@
-import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.mjs';
-
-export function addTreeTerrainLayer(lmap) {
+export function addTreeTerrainLayer(lmap, maplibregl) {
   if (typeof THREE === 'undefined') return;
   if (!THREE.GLTFLoader) {
     console.warn('[tree] THREE.GLTFLoader 未加载');
