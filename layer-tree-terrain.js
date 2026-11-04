@@ -1,14 +1,14 @@
-export function addTreeTerrainLayer(lmap,maplibregl) {
+export function addTreeTerrainLayer(lmap, maplibregl) {
   if (typeof THREE === 'undefined') return;
   if (!THREE.GLTFLoader) {
     console.warn('[tree] THREE.GLTFLoader 未加载');
     return;
   }
 
-  const TOTAL_MAX = 10000;   // 树林总棵数上限
-  const GRID_M = 12;         // 正方形网格树距（米）
+  const TOTAL_MAX = 10000;   // 视野内树数上限
+  const GRID_M = 20;         // 网格树距（米）
   const JITTER_M = 3;       // 每棵树极坐标随机偏移最大距离（米）
-  const VARIANTS = 3;       // 树模型变体数（3 个 GLB）
+  const VARIANTS = 3;       // 树模型变体数
 
   const MODEL_URLS = [
     'models/tree-deciduous-a.glb',
@@ -17,23 +17,33 @@ export function addTreeTerrainLayer(lmap,maplibregl) {
   ];
 
   let treeData = [];
+  let grownCells = new Set();   // 已长过树的格子 key = "gx,gy"
   let started = false;
   let variants = null;
-  let originMerc = null;
+  let originMerc = null;        // 固定局部原点 mercator 坐标（初始化后不再变）
+  let originLng = 0, originLat = 0;
   let layer = null;
   let refreshTimer = null;
   const TREE_MIN_ZOOM = 17;
-  let lastRebuildLng = null;
-  let lastRebuildLat = null;
-  let lastRebuildCount = -1;
 
-  function makeEastNative(centerLngLat) {
-    const origin = maplibregl.MercatorCoordinate.fromLngLat(centerLngLat, 0);
-    return function (lng, lat) {
-      const m = maplibregl.MercatorCoordinate.fromLngLat([lng, lat], 0);
-      const unit = origin.meterInMercatorCoordinateUnits();
-      return [(m.x - origin.x) / unit, (origin.y - m.y) / unit];
-    };
+  // ---- 确定性哈希：同一格子每次生成的随机参数完全一致 ----
+  function hash2(gx, gy, salt) {
+    let h = (gx * 374761393) ^ (gy * 668265263) ^ (salt * 982451653);
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    h = h ^ (h >>> 16);
+    return (h >>> 0) / 4294967295;
+  }
+
+  // 经纬度 -> 相对固定原点的米制偏移 [east, north]
+  function toEastNorth(lng, lat) {
+    const m = maplibregl.MercatorCoordinate.fromLngLat([lng, lat], 0);
+    const unit = originMerc.meterInMercatorCoordinateUnits();
+    return [(m.x - originMerc.x) / unit, (originMerc.y - m.y) / unit];
+  }
+  // 米制偏移 -> 经纬度
+  function toLngLat(e, n) {
+    const mLon = 111320 * Math.cos(originLat * Math.PI / 180);
+    return [originLng + e / mLon, originLat + n / 111320];
   }
 
   function inRing(x, y, ring) {
@@ -49,101 +59,6 @@ export function addTreeTerrainLayer(lmap,maplibregl) {
     if (!inRing(x, y, outer)) return false;
     for (let h = 0; h < holes.length; h++) if (inRing(x, y, holes[h])) return false;
     return true;
-  }
-
-  // ---- 经纬度 <-> 局部米制（以东/北为轴） ----
-  function makeMeterFrame(lng0, lat0) {
-    const mLon = 111320 * Math.cos(lat0 * Math.PI / 180);
-    return {
-      toMeters(lng, lat) { return [(lng - lng0) * mLon, (lat - lat0) * 111320]; },
-      toLngLat(e, n) { return [lng0 + e / mLon, lat0 + n / 111320]; }
-    };
-  }
-
-  // ---- 多边形内正方形网格点 + 极坐标随机偏移 ----
-  function scatterGrid(co) {
-    const ring = co[0];
-    let a = 180, b = -180, c = 90, d = -90;
-    for (const [lo, la] of ring) {
-      a = Math.min(a, lo); b = Math.max(b, lo);
-      c = Math.min(c, la); d = Math.max(d, la);
-    }
-    const fr = makeMeterFrame((a + b) / 2, (c + d) / 2);
-    const outer = ring.map(([lo, la]) => fr.toMeters(lo, la));
-    const holes = co.slice(1).map(h => h.map(([lo, la]) => fr.toMeters(lo, la)));
-
-    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
-    for (const [x, y] of outer) {
-      x0 = Math.min(x0, x); x1 = Math.max(x1, x);
-      y0 = Math.min(y0, y); y1 = Math.max(y1, y);
-    }
-    const out = [];
-    for (let gx = Math.floor(x0 / GRID_M) * GRID_M; gx <= x1; gx += GRID_M) {
-      for (let gy = Math.floor(y0 / GRID_M) * GRID_M; gy <= y1; gy += GRID_M) {
-        if (!inPolyMeters(gx, gy, outer, holes)) continue;
-        const ang = (Math.random() * 2 - 1) * Math.PI;
-        const rad = Math.random() * JITTER_M;
-        out.push(fr.toLngLat(gx + rad * Math.cos(ang), gy + rad * Math.sin(ang)));
-      }
-    }
-    return out;
-  }
-
-  function loadTrees() {
-    let feats;
-    try {
-      feats = lmap.querySourceFeatures('開放免費地圖', {
-        sourceLayer: 'landcover',
-        filter: ['==', ['get', 'class'], 'wood']
-      });
-    } catch (e) {
-      console.warn('[tree] querySourceFeatures 抛错:', e.message);
-      return [];
-    }
-    console.log('[tree] querySourceFeatures 返回要素数:', feats ? feats.length : 0, 'zoom:', lmap.getZoom().toFixed(2));
-    if (!feats || !feats.length) return [];
-    const pts = [];
-    for (const f of feats) {
-      const g = f.geometry;
-      if (g.type === 'Point') {
-        pts.push(g.coordinates);
-      } else if (g.type === 'Polygon') {
-        scatterGrid(g.coordinates).forEach(p => pts.push(p));
-      } else if (g.type === 'MultiPolygon') {
-        for (const po of g.coordinates) scatterGrid(po).forEach(p => pts.push(p));
-      }
-    }
-    console.log('[tree] 散点后树点数:', pts.length);
-    if (pts.length > TOTAL_MAX) {
-      for (let i = pts.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [pts[i], pts[j]] = [pts[j], pts[i]];
-      }
-      pts.length = TOTAL_MAX;
-    }
-    return pts;
-  }
-
-  // 加载三个 GLB 树模型
-  function loadGLBModels() {
-    const loader = new THREE.GLTFLoader();
-    const tasks = MODEL_URLS.map(url => new Promise((resolve, reject) => {
-      loader.load(url,
-        g => {
-          const meshes = [];
-          g.scene.traverse(o => {
-            if (o.isMesh) {
-              meshes.push({ geometry: o.geometry, material: o.material });
-            }
-          });
-          console.log('[tree] 模型加载:', url, 'meshes:', meshes.length);
-          resolve({ meshes });
-        },
-        undefined,
-        err => { console.error('[tree] 加载失败:', url, err); reject(err); }
-      );
-    }));
-    return Promise.all(tasks);
   }
 
   function queryElev(lng, lat) {
@@ -165,23 +80,134 @@ export function addTreeTerrainLayer(lmap,maplibregl) {
     return false;
   }
 
-  // 按当前视野中心重新查 wood 多边形、构建 treeData
-  function rebuildTreeData() {
-    const pts = loadTrees();
-    if (!pts.length) return;
-    const c = lmap.getCenter();
-    originMerc = maplibregl.MercatorCoordinate.fromLngLat([c.lng, c.lat], 0);
-    const eastNorth = makeEastNative([c.lng, c.lat]);
-    treeData = [];
-    for (const [lng, lat] of pts) {
-      const [e, n] = eastNorth(lng, lat);
-      treeData.push({
-        lng, lat, east: e, north: n,
-        elev: queryElev(lng, lat),
-        sc: 0.8 + Math.random() * 0.6,
-        rotY: Math.random() * Math.PI * 2,
-        v: (Math.random() * VARIANTS) | 0
+  function loadGLBModels() {
+    const loader = new THREE.GLTFLoader();
+    const tasks = MODEL_URLS.map(url => new Promise((resolve, reject) => {
+      loader.load(url,
+        g => {
+          const meshes = [];
+          g.scene.traverse(o => {
+            if (o.isMesh) meshes.push({ geometry: o.geometry, material: o.material });
+          });
+          resolve({ meshes });
+        },
+        undefined,
+        err => reject(err)
+      );
+    }));
+    return Promise.all(tasks);
+  }
+
+  // 给单个网格点长一棵树（参数由 hash 决定，确定性）
+  function pushTree(gx, gy) {
+    const ang = hash2(gx, gy, 0) * Math.PI * 2 - Math.PI;
+    const rad = hash2(gx, gy, 1) * JITTER_M;
+    const e = gx + rad * Math.cos(ang);
+    const n = gy + rad * Math.sin(ang);
+    const [lng, lat] = toLngLat(e, n);
+    treeData.push({
+      gx, gy, east: e, north: n,
+      lng, lat,
+      elev: queryElev(lng, lat),
+      sc: 0.8 + hash2(gx, gy, 2) * 0.6,
+      rotY: hash2(gx, gy, 3) * Math.PI * 2,
+      v: Math.floor(hash2(gx, gy, 4) * VARIANTS)
+    });
+  }
+
+  // 从一个多边形里长新树（跳过已长过的格子）
+  function growFromPolygon(co) {
+    const outer = co[0].map(([lng, lat]) => toEastNorth(lng, lat));
+    const holes = co.slice(1).map(h => h.map(([lng, lat]) => toEastNorth(lng, lat)));
+
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const [x, y] of outer) {
+      if (x < x0) x0 = x; if (x > x1) x1 = x;
+      if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+
+    let added = 0;
+    const gxStart = Math.floor(x0 / GRID_M) * GRID_M;
+    const gyStart = Math.floor(y0 / GRID_M) * GRID_M;
+    for (let gx = gxStart; gx <= x1; gx += GRID_M) {
+      for (let gy = gyStart; gy <= y1; gy += GRID_M) {
+        if (!inPolyMeters(gx, gy, outer, holes)) continue;
+        const key = gx + ',' + gy;
+        if (grownCells.has(key)) continue;
+        grownCells.add(key);
+        pushTree(gx, gy);
+        added++;
+      }
+    }
+    return added;
+  }
+
+  // 增量：在当前视野内长新树，回收远处的树
+  function growTreesInView() {
+    if (!originMerc) return;
+    const z = lmap.getZoom();
+    if (z < TREE_MIN_ZOOM) return;
+
+    let feats;
+    try {
+      feats = lmap.querySourceFeatures('開放免費地圖', {
+        sourceLayer: 'landcover',
+        filter: ['==', ['get', 'class'], 'wood']
       });
+    } catch (e) {
+      return;
+    }
+    if (!feats || !feats.length) return;
+
+    let added = 0;
+    for (const f of feats) {
+      const g = f.geometry;
+      if (g.type === 'Polygon') {
+        added += growFromPolygon(g.coordinates);
+      } else if (g.type === 'MultiPolygon') {
+        for (const po of g.coordinates) added += growFromPolygon(po);
+      }
+    }
+
+    // 回收：动态算回收半径 = 当前视野对角线 × 2
+    // 这样屏幕上能看到的树（离中心最远 = 对角线/2）永远不会被删
+    const c = lmap.getCenter();
+    const [curE, curN] = toEastNorth(c.lng, c.lat);
+    const b = lmap.getBounds();
+    const sw = b.getSouthWest();
+    const ne = b.getNorthEast();
+    const [swE, swN] = toEastNorth(sw.lng, sw.lat);
+    const [neE, neN] = toEastNorth(ne.lng, ne.lat);
+    const diagM = Math.sqrt((neE - swE) ** 2 + (neN - swN) ** 2);
+    const recycleR = diagM * 2;  // 视野对角线 × 2
+    const recycleR2 = recycleR * recycleR;
+
+    const before = treeData.length;
+    treeData = treeData.filter(t => {
+      const d2 = (t.east - curE) ** 2 + (t.north - curN) ** 2;
+      if (d2 > recycleR2) {
+        grownCells.delete(t.gx + ',' + t.gy);
+        return false;
+      }
+      return true;
+    });
+
+    // 超 TOTAL_MAX：按距离排序，只留最近的 TOTAL_MAX 棵
+    if (treeData.length > TOTAL_MAX) {
+      treeData.sort((a, b) => {
+        const da = (a.east - curE) ** 2 + (a.north - curN) ** 2;
+        const db = (b.east - curE) ** 2 + (b.north - curN) ** 2;
+        return da - db;
+      });
+      const removed = treeData.slice(TOTAL_MAX);
+      for (const t of removed) grownCells.delete(t.gx + ',' + t.gy);
+      treeData.length = TOTAL_MAX;
+    }
+
+    const recycled = before - treeData.length;
+    if (added > 0 || recycled > 0) {
+      if (layer && layer.onTreesChanged) layer.onTreesChanged();
+      console.log('[tree] 新增 +' + added + ' 回收 ' + recycled + ' 总数 ' + treeData.length);
     }
   }
 
@@ -199,58 +225,69 @@ export function addTreeTerrainLayer(lmap,maplibregl) {
       return;
     }
 
+    // 初始化固定坐标系（只做一次，之后 origin 不再随平移变化）
+    const c = lmap.getCenter();
+    originLng = c.lng;
+    originLat = c.lat;
+    originMerc = maplibregl.MercatorCoordinate.fromLngLat([c.lng, c.lat], 0);
+
     layer = {
       id: 'trees-3d',
       type: 'custom',
       renderingMode: '3d',
       minzoom: TREE_MIN_ZOOM,
       onAdd(map, gl) {
-        try {
-          this.map = map;
-          this.camera = new THREE.Camera();
-          this.scene = new THREE.Scene();
-          this.scene.rotateX(Math.PI / 2);
-          this.scene.scale.multiply(new THREE.Vector3(1, 1, -1));
+        this.map = map;
+        this.camera = new THREE.Camera();
+        this.scene = new THREE.Scene();
+        this.scene.rotateX(Math.PI / 2);
+        this.scene.scale.multiply(new THREE.Vector3(1, 1, -1));
 
-          // 灯光
-          this.scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-          const sun = new THREE.DirectionalLight(0xfff5e0, 1.6);
-          sun.position.set(300, 500, 200);
-          sun.target.position.set(0, 0, 0);
-          this.scene.add(sun);
-          this.scene.add(sun.target);
+        this.scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+        const sun = new THREE.DirectionalLight(0xfff5e0, 1.6);
+        sun.position.set(300, 500, 200);
+        sun.target.position.set(0, 0, 0);
+        this.scene.add(sun);
+        this.scene.add(sun.target);
 
-          this.instanced = [];
-          this.dummy = new THREE.Object3D();
-
-          this.renderer = new THREE.WebGLRenderer({ canvas: map.getCanvas(), context: gl, antialias: false });
-          this.renderer.autoClear = false;
-        } catch (e) {
-          console.error(e);
-        }
-      },
-      buildInstances() {
-        if (!this.scene) return;
-        // 清理旧的实例网格
-        if (this.instanced) {
-          for (const arr of this.instanced) {
-            if (!arr) continue;
-            for (const m of arr) { if (m) { this.scene.remove(m); m.dispose(); } }
-          }
-        }
         this.instanced = [];
+        this.capacityPerVariant = [0, 0, 0];
+        this.dummy = new THREE.Object3D();
 
+        this.renderer = new THREE.WebGLRenderer({ canvas: map.getCanvas(), context: gl, antialias: false });
+        this.renderer.autoClear = false;
+      },
+      // 树数据变化后：判断是否需要扩容重建，否则只重写 instanceMatrix
+      onTreesChanged() {
+        if (!this.scene) return;
         const counts = new Array(VARIANTS).fill(0);
         for (const t of treeData) counts[t.v]++;
-        console.log('[tree] buildInstances, treeData:', treeData.length, 'counts:', counts.join(','));
+
+        let needRebuild = false;
         for (let v = 0; v < VARIANTS; v++) {
-          this.instanced[v] = [];
-          if (!counts[v] || !variants[v]) continue;
-          for (const mesh of variants[v].meshes) {
-            const inst = new THREE.InstancedMesh(mesh.geometry, mesh.material, counts[v]);
-            inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-            this.instanced[v].push(inst);
-            this.scene.add(inst);
+          if (counts[v] > this.capacityPerVariant[v]) needRebuild = true;
+        }
+
+        if (needRebuild) {
+          // 销毁旧的 InstancedMesh
+          if (this.instanced) {
+            for (const arr of this.instanced) {
+              if (!arr) continue;
+              for (const m of arr) { if (m) { this.scene.remove(m); m.dispose(); } }
+            }
+          }
+          this.instanced = [];
+          this.capacityPerVariant = counts.slice();
+
+          for (let v = 0; v < VARIANTS; v++) {
+            this.instanced[v] = [];
+            if (!counts[v] || !variants[v]) continue;
+            for (const mesh of variants[v].meshes) {
+              const inst = new THREE.InstancedMesh(mesh.geometry, mesh.material, counts[v]);
+              inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+              this.instanced[v].push(inst);
+              this.scene.add(inst);
+            }
           }
         }
         this.applyMatrices();
@@ -270,7 +307,10 @@ export function addTreeTerrainLayer(lmap,maplibregl) {
           d.rotation.set(0, t.rotY, 0);
           d.updateMatrix();
           if (this.instanced[t.v]) {
-            for (const inst of this.instanced[t.v]) inst.setMatrixAt(k, d.matrix);
+            for (const inst of this.instanced[t.v]) {
+              inst.setMatrixAt(k, d.matrix);
+              inst.count = idx[t.v];
+            }
           }
         }
         for (const arr of this.instanced) {
@@ -280,6 +320,7 @@ export function addTreeTerrainLayer(lmap,maplibregl) {
       },
       render(gl, args) {
         if (!originMerc) return;
+        if (lmap.getZoom() < TREE_MIN_ZOOM) return;
         const mm = Array.isArray(args)
           ? args
           : (args.defaultProjectionData ? args.defaultProjectionData.mainMatrix : args.projectionMatrix);
@@ -304,6 +345,7 @@ export function addTreeTerrainLayer(lmap,maplibregl) {
       return;
     }
 
+    // 高程更新：只处理 elev 还没取到的新树
     function updateHeights() {
       if (!lmap.getTerrain()) return;
       let changed = false;
@@ -313,60 +355,24 @@ export function addTreeTerrainLayer(lmap,maplibregl) {
           if (e == null) continue;
           t.elev = e;
           changed = true;
-        } else {
-          const e = queryElev(t.lng, t.lat);
-          if (e == null) continue;
-          if (Math.abs(e - t.elev) > 0.5) {
-            t.elev = e;
-            changed = true;
-          }
         }
       }
       if (changed && layer && layer.applyMatrices) layer.applyMatrices();
     }
     lmap.on('idle', updateHeights);
 
-    // 视野稳定后，按当前 zoom 重新查 wood 多边形、重建树
-    function scheduleRebuild() {
+    function scheduleGrow() {
       if (refreshTimer) clearTimeout(refreshTimer);
       refreshTimer = setTimeout(() => {
-        if (!layer) return;
-        const z = lmap.getZoom();
-        if (z < TREE_MIN_ZOOM) {
-          if (lastRebuildCount > 0) {
-            treeData = [];
-            lastRebuildCount = 0;
-            layer.buildInstances();
-          }
-          return;
-        }
-        const c = lmap.getCenter();
-        if (lastRebuildLng != null) {
-          const dLat = c.lat - lastRebuildLat;
-          const dLng = c.lng - lastRebuildLng;
-          const distM = Math.sqrt((dLng * 111320 * Math.cos(c.lat * Math.PI / 180)) ** 2 + (dLat * 111320) ** 2);
-          if (distM < 50) return;
-        }
-        rebuildTreeData();
-        lastRebuildLng = c.lng;
-        lastRebuildLat = c.lat;
-        lastRebuildCount = treeData.length;
-        layer.buildInstances();
-        updateHeights();
+        growTreesInView();
       }, 300);
     }
-    lmap.on('idle', scheduleRebuild);
-    lmap.on('moveend', scheduleRebuild);
+    lmap.on('idle', scheduleGrow);
+    lmap.on('moveend', scheduleGrow);
 
-    // 初始触发一次
-    rebuildTreeData();
-    {
-      const c = lmap.getCenter();
-      lastRebuildLng = c.lng;
-      lastRebuildLat = c.lat;
-      lastRebuildCount = treeData.length;
-    }
-    if (layer.buildInstances) layer.buildInstances();
+    // 初始长一次
+    growTreesInView();
+    if (layer && layer.onTreesChanged) layer.onTreesChanged();
   }
 
   if (lmap.loaded && lmap.loaded()) {
