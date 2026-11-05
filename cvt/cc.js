@@ -9,18 +9,21 @@ const 濾類 = [
 	["面",["restaurant","food_court","bakery","fast_food"],"麵","面"],
 	["谷",["restaurant","food_court","bakery","fast_food"],"穀","谷"]
 ];
+function 括號轉全形(str){
+	return str.replace(/\s*\(\s*/g,'（').replace(/\s*\)\s*/g,'）');
+}
 function 一對一轉字(str){
 	var 轉得 = str.split('');// 未慮擴展平面
 	for (const 字對 of [基礎字對,基礎字對倭,微調字對,逕轉一對多字對]){
 		let 字映射 = new Map(字對);
 		轉得 = 轉得.map(c => 字映射.get(c) || c);
 	}
-	轉得 = 轉得.join('');
+	轉得 = 括號轉全形(轉得.join(''));
 	return 轉得;
 }
 function 微調(str){
 	const 字映射 = new Map(微調字對);
-	return str.split('').map(c => 字映射.get(c) || c).join('');
+	return 括號轉全形(str.split('').map(c => 字映射.get(c) || c).join(''));
 }
 function 轉地名(徵){
 	const 屬性彙 = 徵.properties;
