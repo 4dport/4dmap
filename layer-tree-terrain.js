@@ -40,8 +40,14 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
   }
  
   function toLngLat(e, n) {
-    const mLon = 111320 * Math.cos(originLat * Math.PI / 180);
-    return [originLng + e / mLon, originLat + n / 111320];
+    const unit = originMerc.meterInMercatorCoordinateUnits();
+    const mc = new maplibregl.MercatorCoordinate(
+      originMerc.x + e * unit,
+      originMerc.y - n * unit,
+      0
+    );
+    const ll = mc.toLngLat();
+    return [ll.lng, ll.lat];
   }
 
   function inRing(x, y, ring) {
@@ -106,6 +112,7 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
       gx, gy, east: e, north: n,
       lng, lat,
       elev: queryElev(lng, lat),
+      elevChecked: 0,  
       sc: 0.8 + hash2(gx, gy, 2) * 0.6,
       rotY: hash2(gx, gy, 3) * Math.PI * 2,
       v: Math.floor(hash2(gx, gy, 4) * VARIANTS)
@@ -139,7 +146,7 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
     return added;
   }
 
-  // 增量：在当前视野内长新树，回收远处的树
+  // 回收远处的树
   function growTreesInView() {
     if (!originMerc) return;
     const z = lmap.getZoom();
@@ -337,22 +344,26 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
       console.error(e);
       return;
     }
-
-    // 高程更新：只处理elev还没取到的新树
+    const ELEV_CONFIRM_TIMES = 2;
     function updateHeights() {
       if (!lmap.getTerrain()) return;
       let changed = false;
       for (const t of treeData) {
-        if (t.elev == null) {
-          const e = queryElev(t.lng, t.lat);
-          if (e == null) continue;
+        if (t.elevChecked >= ELEV_CONFIRM_TIMES && t.elev != null) continue;
+        const e = queryElev(t.lng, t.lat);
+        if (e == null) continue;
+        if (t.elev == null || Math.abs(e - t.elev) > 0.01) {
           t.elev = e;
           changed = true;
         }
+        t.elevChecked = (t.elevChecked || 0) + 1;
       }
       if (changed && layer && layer.applyMatrices) layer.applyMatrices();
     }
     lmap.on('idle', updateHeights);
+    lmap.on('data', (ev) => {
+      if (ev.sourceId === 'terrainSource') updateHeights();
+    });
 
     function scheduleGrow() {
       if (refreshTimer) clearTimeout(refreshTimer);
