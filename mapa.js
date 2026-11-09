@@ -7,8 +7,8 @@ if (/\sQQ|micromessenger/i.test(navigator.userAgent.toLowerCase())){
 import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.mjs';
 import { getSubsolarPoint, TerminatorLayer } from './layer-terminator.js';
 import { 轉瓦內字 } from './cvt/cc.js';
-import { Orienting } from './nav.js?t=f';
-import { addTreeTerrainLayer } from "./layer-tree-terrain.js?v=9";
+import { Orienting, RouteNavigation } from './nav.js?t=4';
+import { addTreeTerrainLayer } from "./layer-tree-terrain.js?v=11";
 const pmProtocol = new pmtiles.Protocol();
 maplibregl.addProtocol('pmtiles',pmProtocol.tile);
 const PMTILES_NAME = ['鄉以上地點','中國无港澳臺海域','中國政區界','海深','公海和南極'];
@@ -219,3 +219,19 @@ lmap.on("click", (e) => {
 // import { addTreeTerrainLayer } from './layer-tree-terrain.js';
 // addTreeTerrainLayer(lmap, maplibregl.MercatorCoordinate);
 addTreeTerrainLayer(lmap,maplibregl);
+
+const 導航 = new RouteNavigation(lmap, maplibregl);
+導航.load('network.json?v=3').then(() => {
+	document.getElementById('規劃路線').addEventListener('click', () => {
+		const a = document.getElementById('起點名').value.trim();
+		const b = document.getElementById('終點名').value.trim();
+		const mode = document.getElementById('出行方式').value;
+		const box = document.getElementById('導航結果');
+		const res = 導航.planRoute(a, b, mode);
+		if (res.ok) {
+			box.textContent = `[${res.mode}] ${res.start} → ${res.end}：${res.length} m，${res.path.length} 个节点`;
+		} else {
+			box.textContent = res.reason;
+		}
+	});
+}).catch((err) => console.error('导航数据加载失败', err));
