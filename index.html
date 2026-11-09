@@ -26,6 +26,16 @@
 			<option value="天地圖">天地圖</option>
 		</select>
 	</div>
+	<div id="導航面板" style="position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:950;background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;box-shadow:0 2px 8px rgba(0,0,0,0.12);">
+		起点 <input id="起點名" type="text" placeholder="如 远航楼" style="width:110px;padding:4px 6px;">
+		终点 <input id="終點名" type="text" placeholder="如 综合楼" style="width:110px;padding:4px 6px;">
+		<select id="出行方式" style="padding:4px 6px;">
+			<option value="walk">步行</option>
+			<option value="drive">驾车</option>
+		</select>
+		<button id="規劃路線" style="padding:5px 12px;cursor:pointer;">规划路线</button>
+		<span id="導航結果" style="font-size:12px;color:#333;"></span>
+	</div>
 	<script type="module" src="mapa.js?d=22"></script>
 </body>
 </html>
