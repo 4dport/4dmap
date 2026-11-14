@@ -11,8 +11,14 @@
 	<script src="pmtiles.js"></script>
 	<script src="ly.js"></script>
 	<script src="取瓦.js"></script>
-	<script src="three.min.js"></script>
-	<script src="GLTFLoader.js"></script>
+	<script type="importmap">
+{
+	"imports": {
+		"three": "./vendor/three.module.js",
+		"three/addons/": "./vendor/addons/"
+	}
+}
+</script>
 </head>
 <body>
 	<div id="map"></div>
