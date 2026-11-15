@@ -13,3 +13,8 @@ border-left: 6px solid transparent; border-right: 6px solid transparent; border-
 transform-origin: center 16.5px; pointer-events: none; filter: drop-shadow(0 0 2px white); z-index: -1
 }
 .針字 {position: absolute; left:1px; top:0; width:13px; height:13px; font-size: 13px; color:#ffd; text-align: center; line-height: 16px}
+#導航面板 {position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:950; background:#fff; border:1px solid #ddd; border-radius:10px; padding:10px 12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; box-shadow:0 2px 8px rgba(0,0,0,0.12)}
+#起點名, #終點名 {width:110px; padding:4px 6px}
+#出行方式 {padding:4px 6px}
+#規劃路線 {padding:5px 12px; cursor:pointer}
+#導航結果 {font-size:12px; color:#333}
