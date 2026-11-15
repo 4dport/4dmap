@@ -105,9 +105,10 @@ export class RouteNavigation {
 		this.maplibregl = maplibregl;
 		this.network = null;
 		this.places = [];
-		this.walkAdj = {};    
-		this.driveAdj = {};  
+		this.walkAdj = {};    // 步行：全量道路
+		this.driveAdj = {};   // 驾车：仅车行道 + 咬合短边
 		this.driveNodes = new Set();
+		this.driveMain = new Set();  // 车行主连通分量（主网）
 		this.sourceId = "route-source";
 		this.casingLayer = "route-casing";
 		this.lineLayer = "route-line";
@@ -134,8 +135,68 @@ export class RouteNavigation {
 				this.driveNodes.add(v);
 			}
 		}
+		this._snapDrive(12.0);            // 车行近邻咬合，把碎片支路并入主网
+		this.driveMain = this._computeDriveMain();  // 求车行主连通分量
 	}
 
+	// 车行近邻咬合
+	_snapDrive(thresh) {
+		const cell = 0.00012; 
+		const grid = new Map();
+		const bucket = (la, lo) => `${Math.round(la / cell)},${Math.round(lo / cell)}`;
+		for (const n of this.driveNodes) {
+			const [lo, la] = this.network.nodes[n];
+			const k = bucket(la, lo);
+			if (!grid.has(k)) grid.set(k, []);
+			grid.get(k).push(n);
+		}
+		const seen = new Set();
+		for (const [k, members] of grid) {
+			const [gx, gy] = k.split(",").map(Number);
+			for (const dx of [-1, 0, 1]) for (const dy of [-1, 0, 1]) {
+				const neigh = grid.get(`${gx + dx},${gy + dy}`);
+				if (!neigh) continue;
+				for (const a of members) for (const b of neigh) {
+					if (a === b) continue;
+					const key = a < b ? `${a}|${b}` : `${b}|${a}`;
+					if (seen.has(key)) continue;
+					seen.add(key);
+					const [loA, laA] = this.network.nodes[a];
+					const [loB, laB] = this.network.nodes[b];
+					const d = _haversine(laA, loA, laB, loB);
+					if (d > thresh) continue;
+					if (!(this.driveAdj[a] || []).some(([x]) => x === b)) {
+						(this.driveAdj[a] = this.driveAdj[a] || []).push([b, d]);
+						(this.driveAdj[b] = this.driveAdj[b] || []).push([a, d]);
+						this.driveNodes.add(a); this.driveNodes.add(b);
+					}
+				}
+			}
+		}
+	}
+
+	// 求车行无向图最大连通分量
+	_computeDriveMain() {
+		const visited = new Set();
+		let main = new Set();
+		for (const start of this.driveNodes) {
+			if (visited.has(start)) continue;
+			const comp = new Set();
+			const q = [start];
+			visited.add(start);
+			while (q.length) {
+				const u = q.pop();
+				comp.add(u);
+				for (const [v] of (this.driveAdj[u] || [])) {
+					if (!visited.has(v)) { visited.add(v); q.push(v); }
+				}
+			}
+			if (comp.size > main.size) main = comp;
+		}
+		return main;
+	}
+
+	// 地名模糊匹配
 	matchPlaces(keyword) {
 		const k = String(keyword || "").trim().toLowerCase();
 		if (!k) return [];
@@ -158,6 +219,7 @@ export class RouteNavigation {
 		return best;
 	}
 
+	// 二叉堆辅助
 	_heapPush(heap, item) {
 		heap.push(item);
 		let i = heap.length - 1;
@@ -187,7 +249,7 @@ export class RouteNavigation {
 		}
 	}
 
-	// 在指定邻接表上求最短路
+	// Dijkstra：在指定邻接表上求最短路，返回 { path, dist }；不可达返回 null
 	_dijkstra(adj, src, dst) {
 		const dist = {}, prev = {}, settled = new Set();
 		const heap = [[0, src]];
@@ -213,7 +275,15 @@ export class RouteNavigation {
 		return { path: path.reverse(), dist: dist[dst] };
 	}
 
-	// 按起终点地名与出行方式规划路线并绘制
+	_pickNode(lng, lat, drive) {
+		if (!drive) return this._nearestNode(lng, lat, null);
+		for (const pool of [this.driveMain, this.driveNodes, null]) {
+			const n = this._nearestNode(lng, lat, pool);
+			if (n) return n;
+		}
+		return null;
+	}
+
 	planRoute(nameA, nameB, mode = "walk") {
 		const a = this.matchPlaces(nameA)[0];
 		const b = this.matchPlaces(nameB)[0];
@@ -222,10 +292,14 @@ export class RouteNavigation {
 
 		const drive = mode === "drive";
 		const adj = drive ? this.driveAdj : this.walkAdj;
-		const cand = drive ? this.driveNodes : null;
-		const s = this._nearestNode(a.lng, a.lat, cand);
-		const t = this._nearestNode(b.lng, b.lat, cand);
-		const res = this._dijkstra(adj, s, t);
+		const s = this._pickNode(a.lng, a.lat, drive);
+		const t = this._pickNode(b.lng, b.lat, drive);
+		let res = this._dijkstra(adj, s, t);
+		let fallback = false;
+		if (!res && drive) {
+			res = this._dijkstra(this.walkAdj, s, t);
+			fallback = true;
+		}
 		if (!res) return { ok: false, reason: drive ? "驾车不可达（附近没有车行道）" : "两点在路网中不可达" };
 
 		this._renderRoute(res.path);
@@ -235,7 +309,8 @@ export class RouteNavigation {
 			length: Math.round(res.dist * 10) / 10,
 			start: a.name,
 			end: b.name,
-			mode: drive ? "驾车" : "步行"
+			mode: fallback ? "步行(车行不可达)" : (drive ? "驾车" : "步行"),
+			fallback
 		};
 	}
 
@@ -255,7 +330,7 @@ export class RouteNavigation {
 		} else {
 			this.lmap.addSource(this.sourceId, { type: "geojson", data: geojson });
 		}
-		// 白色描边底层
+		// 白色描边底层，增强路线辨识度
 		this.lmap.addLayer({
 			id: this.casingLayer,
 			type: "line",
