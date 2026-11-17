@@ -4,7 +4,7 @@ if (/\sQQ|micromessenger/i.test(navigator.userAgent.toLowerCase())){
 	全遮板.innerHTML = '請以瀏覽器啓視';
 	document.body.appendChild(全遮板);
 }
-import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.mjs';
+import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.19.0/dist/maplibre-gl.mjs';
 import { getSubsolarPoint, TerminatorLayer } from './layer-terminator.js';
 import { 轉瓦內字 } from './cvt/cc.js';
 import { Orienting, RouteNavigation } from './nav.js?t=4';
@@ -35,8 +35,8 @@ if(初縮放==undefined){
 	初縮放 = Number(初縮放);
 	if(初縮放<1){ 初縮放 = 1;}
 }
-localStorage.removeItem("經度");localStorage.removeItem("緯度");
-export const lmap = new maplibregl.Map({
+
+const lmap = new maplibregl.Map({
 	container: 'map',
 	zoom: 初縮放, center: 圖央, pitch: 0,
 	hash: false, canvasContextAttributes: {antialias: true},
@@ -216,8 +216,6 @@ lmap.on("click", (e) => {
 		}
 	}
 });
-// import { addTreeTerrainLayer } from './layer-tree-terrain.js';
-// addTreeTerrainLayer(lmap, maplibregl.MercatorCoordinate);
 addTreeTerrainLayer(lmap,maplibregl);
 
 const 導航 = new RouteNavigation(lmap, maplibregl);
