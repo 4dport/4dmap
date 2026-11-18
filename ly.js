@@ -1294,10 +1294,8 @@ const 諸層 = [{
 		"fill-extrusion-height": ["interpolate",["linear"],["zoom"],
 			15, 0, 16, ["coalesce",["get", "render_height"],["*", ["coalesce", ["get", "building:levels"], 3], 3]]
 		],
-		"fill-extrusion-base": ["case",
-			[">=", ["get", "zoom"], 16],
-			["coalesce", ["get", "base_height"], ["get", "render_min_height"], 0],
-			0
+		"fill-extrusion-base": ["interpolate",["linear"],["zoom"],
+			15, 0, 16, ["coalesce", ["get", "render_min_height"], ["get", "base_height"], 0]
 		],
 		"fill-extrusion-opacity": 0.9
 	}
