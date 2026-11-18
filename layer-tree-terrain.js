@@ -375,8 +375,6 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
           : (args.defaultProjectionData ? args.defaultProjectionData.mainMatrix : args.projectionMatrix);
         const m = new THREE.Matrix4().fromArray(mm);
         const horizontalUnit = originMerc.meterInMercatorCoordinateUnits();
-        // MapLibre ???????????????????
-        // X/Y ??????????????? Z ????????
         const viewCenter = maplibregl.MercatorCoordinate.fromLngLat(lmap.getCenter(), 0);
         const heightUnit = viewCenter.meterInMercatorCoordinateUnits();
         const l = new THREE.Matrix4()
