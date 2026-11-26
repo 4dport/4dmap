@@ -24,6 +24,10 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
   let variants = null;
   let originMerc = null;       
   let originLng = 0, originLat = 0;
+  let renderMerc = null;
+  let renderEast = 0;
+  let renderNorth = 0;
+  const RENDER_REBASE_M = 256;
   let layer = null;
   let refreshTimer = null;
   const TREE_MIN_ZOOM = 17;
@@ -41,6 +45,19 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
     return [(m.x - originMerc.x) / unit, (originMerc.y - m.y) / unit];
   }
  
+  function updateRenderOrigin(centerMerc) {
+    const unit = originMerc.meterInMercatorCoordinateUnits();
+    const east = (centerMerc.x - originMerc.x) / unit;
+    const north = (originMerc.y - centerMerc.y) / unit;
+    const distance2 = (east - renderEast) ** 2 + (north - renderNorth) ** 2;
+    if (renderMerc && distance2 < RENDER_REBASE_M ** 2) return false;
+
+    renderMerc = centerMerc;
+    renderEast = east;
+    renderNorth = north;
+    return true;
+  }
+
   function inRing(x, y, ring) {
     let ins = false;
     for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
@@ -60,23 +77,47 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
   let lastCoverage = null;
   let lastTreeData = null;
   let lastExaggeration = null;
+  let lastMeshSize = null;
   let warnedTerrainAPI = false;
 
+  // 与地形网格一致：每格沿左上到右下的对角线分成两个三角形。
+  function sampleTerrainTriangle(sampler, x, y, meshSize) {
+    const step = TILE_EXTENT / meshSize;
+    const column = Math.min(meshSize - 1, Math.max(0, Math.floor(x / step)));
+    const row = Math.min(meshSize - 1, Math.max(0, Math.floor(y / step)));
+    const x0 = column * step;
+    const y0 = row * step;
+    const u = Math.min(1, Math.max(0, (x - x0) / step));
+    const v = Math.min(1, Math.max(0, (y - y0) / step));
+    const topLeft = sampler(x0, y0, TILE_EXTENT);
+    const bottomRight = sampler(x0 + step, y0 + step, TILE_EXTENT);
+
+    if (v >= u) {
+      const bottomLeft = sampler(x0, y0 + step, TILE_EXTENT);
+      return topLeft * (1 - v) + bottomLeft * (v - u) + bottomRight * u;
+    }
+
+    const topRight = sampler(x0 + step, y0, TILE_EXTENT);
+    return topLeft * (1 - u) + topRight * (u - v) + bottomRight * v;
+  }
+
   function updateTerrainHeights() {
-    // getTerrain() 返回配置。实际渲染瓦片索引在 Terrain 对象上。
     const terrain = lmap.terrain;
     if (!terrain?.getCoverageIndex && lmap.getTerrain() && !warnedTerrainAPI) {
       warnedTerrainAPI = true;
       console.warn('[tree] 当前 MapLibre 版本未提供地形覆盖索引，暂不显示无可用高程的树');
     }
-    const coverage = terrain?.getCoverageIndex?.() ?? null;
+    const meshSize = terrain?.meshSize;
+    const usableMesh = Number.isInteger(meshSize) && meshSize > 0;
+    const coverage = usableMesh ? terrain?.getCoverageIndex?.() ?? null : null;
     const exaggeration = terrain?.exaggeration ?? 1;
     if (coverage === lastCoverage && treeData === lastTreeData &&
-        exaggeration === lastExaggeration) return false;
+        exaggeration === lastExaggeration && meshSize === lastMeshSize) return false;
 
     lastCoverage = coverage;
     lastTreeData = treeData;
     lastExaggeration = exaggeration;
+    lastMeshSize = meshSize;
     let changed = false;
     for (const tree of treeData) {
       let sampler = null;
@@ -100,10 +141,14 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
         }
       }
 
-      if (tree.terrainSampler === sampler && tree.exaggeration === exaggeration) continue;
+      if (tree.terrainSampler === sampler && tree.exaggeration === exaggeration &&
+          tree.terrainMeshSize === meshSize) continue;
       tree.terrainSampler = sampler;
       tree.exaggeration = exaggeration;
-      const sample = sampler ? sampler(x, y, TILE_EXTENT) * exaggeration : null;
+      tree.terrainMeshSize = meshSize;
+      const sample = sampler
+        ? sampleTerrainTriangle(sampler, x, y, meshSize) * exaggeration
+        : null;
       const elev = Number.isFinite(sample) ? sample : null;
       if (elev !== tree.elev) {
         tree.elev = elev;
@@ -271,6 +316,9 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
     originLng = c.lng;
     originLat = c.lat;
     originMerc = maplibregl.MercatorCoordinate.fromLngLat([c.lng, c.lat], 0);
+    renderMerc = originMerc;
+    renderEast = 0;
+    renderNorth = 0;
 
     layer = {
       id: 'trees-3d',
@@ -345,7 +393,11 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
           const t = treeData[i];
           if (t.elev == null) continue;
           const k = idx[t.v]++;
-          d.position.set(t.east, t.elev, t.north);
+          d.position.set(
+            t.east - renderEast,
+            t.elev,
+            t.north - renderNorth
+          );
           d.scale.setScalar(t.sc * 0.4);
           d.rotation.set(0, t.rotY, 0);
           d.updateMatrix();
@@ -368,17 +420,19 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
       render(gl, args) {
         if (!originMerc) return;
         if (lmap.getZoom() < TREE_MIN_ZOOM) return;
-        // 地图这一帧确定了用于绘制的地形，再提交树的位置和可见状态。
-        if (treeData.length && updateTerrainHeights()) this.applyMatrices();
+        const viewCenter = maplibregl.MercatorCoordinate.fromLngLat(lmap.getCenter(), 0);
+        const originChanged = updateRenderOrigin(viewCenter);
+        const heightsChanged = treeData.length > 0 && updateTerrainHeights();
+        if (originChanged || heightsChanged) this.applyMatrices();
         const mm = Array.isArray(args)
           ? args
           : (args.defaultProjectionData ? args.defaultProjectionData.mainMatrix : args.projectionMatrix);
         const m = new THREE.Matrix4().fromArray(mm);
         const horizontalUnit = originMerc.meterInMercatorCoordinateUnits();
-        const viewCenter = maplibregl.MercatorCoordinate.fromLngLat(lmap.getCenter(), 0);
+        // 水平单位沿用种树网格，高程单位跟随当前视图。
         const heightUnit = viewCenter.meterInMercatorCoordinateUnits();
         const l = new THREE.Matrix4()
-          .makeTranslation(originMerc.x, originMerc.y, originMerc.z)
+          .makeTranslation(renderMerc.x, renderMerc.y, 0)
           .scale(new THREE.Vector3(horizontalUnit, -horizontalUnit, heightUnit));
         this.camera.projectionMatrix = m.multiply(l);
         this.renderer.state.reset();
