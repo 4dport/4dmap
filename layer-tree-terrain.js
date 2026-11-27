@@ -8,6 +8,7 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
   }
 
   const TOTAL_MAX = 10000;   // 视野内树数上限
+  const ROW_SPACING_M = 8; // 树排间距（米）
   const GRID_M = 12;         // 网格树距（米）
   const JITTER_M = 3;       // 每棵树极坐标随机偏移最大距离（米）
   const VARIANTS = 3;       // 树模型变体数
@@ -176,14 +177,14 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
     return Promise.all(tasks);
   }
 
-  function pushTree(gx, gy) {
+  function pushTree(gx, gy, key, exact = false) {
     const ang = hash2(gx, gy, 0) * Math.PI * 2 - Math.PI;
-    const rad = hash2(gx, gy, 1) * JITTER_M;
+    const rad = exact ? 0 : hash2(gx, gy, 1) * JITTER_M;
     const e = gx + rad * Math.cos(ang);
     const n = gy + rad * Math.sin(ang);
     const unit = originMerc.meterInMercatorCoordinateUnits();
     treeData.push({
-      gx, gy, east: e, north: n,
+      key, exact, gx, gy, east: e, north: n,
       worldX: originMerc.x + e * unit,
       worldY: originMerc.y - n * unit,
       elev: null,
@@ -227,16 +228,13 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
 
   function growTreesInView() {
     if (!originMerc || lmap.getZoom() < TREE_MIN_ZOOM) return;
-    let feats;
-    try {
-      feats = lmap.querySourceFeatures('開放免費地圖', {
-        sourceLayer: 'landcover',
-        filter: ['==', ['get', 'class'], 'wood']
-      });
-    } catch {
-      return;
-    }
-    if (!feats?.length) return;
+    const query = (source, sourceLayer, filter) => {
+      try { return lmap.querySourceFeatures(source, { sourceLayer, ...(filter ? { filter } : {}) }); }
+      catch { return []; }
+    };
+    const feats = query('開放免費地圖', 'landcover', ['==', ['get', 'class'], 'wood']);
+    const points = query('補自然元素', '獨木');
+    const rows = query('補自然元素', '行木');
 
     const center = lmap.getCenter();
     const [curE, curN] = toEastNorth(center.lng, center.lat);
@@ -261,7 +259,7 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
     const candidates = new Map();
     for (const t of treeData) {
       if (distance2(t.gx, t.gy) <= recycleR2) {
-        candidates.set(t.gx + ',' + t.gy, { gx: t.gx, gy: t.gy, tree: t });
+        candidates.set(t.key, { gx: t.gx, gy: t.gy, exact: t.exact, tree: t });
       }
     }
 
@@ -273,6 +271,58 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
         for (const polygon of g.coordinates) {
           collectTreeCells(polygon, area, candidates);
         }
+      }
+    }
+
+    const addExact = (x, y) => {
+      if (!Number.isFinite(x) || !Number.isFinite(y) ||
+          x < area.minX || x > area.maxX || y < area.minY || y > area.maxY) return;
+      const key = 'exact:' + Math.round(x * 10) + ',' + Math.round(y * 10);
+      if (!candidates.has(key)) candidates.set(key, { gx: x, gy: y, exact: true });
+    };
+    for (const f of points) {
+      const g = f.geometry;
+      if (g.type === 'Point') addExact(...toEastNorth(...g.coordinates));
+      else if (g.type === 'MultiPoint') {
+        for (const p of g.coordinates) addExact(...toEastNorth(...p));
+      }
+    }
+    const collectRow = coordinates => {
+      if (!coordinates.length) return;
+      const path = coordinates.map(p => toEastNorth(...p));
+      let travelled = 0;
+      addExact(...path[0]);
+      for (let i = 1; i < path.length; i++) {
+        const [x, y] = path[i - 1];
+        const dx = path[i][0] - x, dy = path[i][1] - y;
+        const length = Math.hypot(dx, dy);
+        if (!length) continue;
+        // 裁剪到视野后采样，间距仍从原折线起点累计。
+        let lo = 0, hi = 1;
+        for (const [v, d, min, max] of [[x, dx, area.minX, area.maxX], [y, dy, area.minY, area.maxY]]) {
+          if (d === 0) { if (v < min || v > max) hi = -1; }
+          else {
+            const a = (min - v) / d, b = (max - v) / d;
+            lo = Math.max(lo, Math.min(a, b));
+            hi = Math.min(hi, Math.max(a, b));
+          }
+        }
+        if (lo <= hi) {
+          const first = Math.ceil((travelled + lo * length) / ROW_SPACING_M);
+          const last = Math.floor((travelled + hi * length) / ROW_SPACING_M);
+          for (let k = first; k <= last; k++) {
+            const t = (k * ROW_SPACING_M - travelled) / length;
+            addExact(x + dx * t, y + dy * t);
+          }
+        }
+        travelled += length;
+      }
+    };
+    for (const f of rows) {
+      const g = f.geometry;
+      if (g.type === 'LineString') collectRow(g.coordinates);
+      else if (g.type === 'MultiLineString') {
+        for (const line of g.coordinates) collectRow(line);
       }
     }
 
@@ -294,7 +344,7 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
     for (const [key, c] of selected) {
       grownCells.add(key);
       if (c.tree) treeData.push(c.tree);
-      else pushTree(c.gx, c.gy);
+      else pushTree(c.gx, c.gy, key, c.exact);
     }
 
     layer?.onTreesChanged?.();
