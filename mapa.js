@@ -11,7 +11,7 @@ import { Orienting, RouteNavigation } from './nav.js?t=4';
 import { addTreeTerrainLayer } from './layer-tree-terrain.js?v=11';
 const pmProtocol = new pmtiles.Protocol();
 maplibregl.addProtocol('pmtiles',pmProtocol.tile);
-const PMTILES_NAME = ['鄉以上地點','中國无港澳臺海域','中國政區界','海深','公海和南極','木'];
+const PMTILES_NAME = ['鄉以上地點','中國无港澳臺海域','中國政區界','海深','公海和南極','木','鐵路'];
 const TILES_LOC = 'https://pub-76f7e7fbf50f4423b85486dda0feb0c9.r2.dev/瓦/';
 for (const pmtilesUrl of PMTILES_NAME){
 	const p = new pmtiles.PMTiles(TILES_LOC + pmtilesUrl +'.pmtiles');
@@ -125,6 +125,9 @@ const lmap = new maplibregl.Map({
 			},
 			補自然元素: {
 				type: 'vector', url: `pmtiles://${TILES_LOC}木.pmtiles`
+			},
+			補鐵路: {
+				type: 'vector', url: `pmtiles://${TILES_LOC}鐵路.pmtiles`
 			}
 		},
 		layers: 諸層,
