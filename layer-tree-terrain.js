@@ -81,7 +81,6 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
   let lastMeshSize = null;
   let warnedTerrainAPI = false;
 
-  // 与地形网格一致：每格沿左上到右下的对角线分成两个三角形。
   function sampleTerrainTriangle(sampler, x, y, meshSize) {
     const step = TILE_EXTENT / meshSize;
     const column = Math.min(meshSize - 1, Math.max(0, Math.floor(x / step)));
@@ -297,7 +296,6 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
         const dx = path[i][0] - x, dy = path[i][1] - y;
         const length = Math.hypot(dx, dy);
         if (!length) continue;
-        // 裁剪到视野后采样，间距仍从原折线起点累计。
         let lo = 0, hi = 1;
         for (const [v, d, min, max] of [[x, dx, area.minX, area.maxX], [y, dy, area.minY, area.maxY]]) {
           if (d === 0) { if (v < min || v > max) hi = -1; }
@@ -479,7 +477,7 @@ export function addTreeTerrainLayer(lmap, maplibregl) {
           : (args.defaultProjectionData ? args.defaultProjectionData.mainMatrix : args.projectionMatrix);
         const m = new THREE.Matrix4().fromArray(mm);
         const horizontalUnit = originMerc.meterInMercatorCoordinateUnits();
-        // 水平单位沿用种树网格，高程单位跟随当前视图。
+      
         const heightUnit = viewCenter.meterInMercatorCoordinateUnits();
         const l = new THREE.Matrix4()
           .makeTranslation(renderMerc.x, renderMerc.y, 0)
