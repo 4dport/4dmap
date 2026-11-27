@@ -1317,6 +1317,14 @@ const 諸層 = [{
 		"fill-extrusion-opacity": 0.9
 	}
 },{
+	"id": "鐵路-短途綫", "type": "line",
+	"source": "補鐵路", "source-layer": "rail_route_urban",
+	"paint": {
+		"line-color": ["coalesce", ["get", "colour"], "#999"],
+		"line-opacity": ["interpolate",["linear"],["zoom"], 16,1, 18,0.4],
+		"line-width": ["interpolate", ["linear"], ["zoom"], 9,0.5, 12,2]
+	}
+},{
 	id:"自然區名", type:"symbol", source:"開放免費地圖", "source-layer": "park",
 	layout:{
 		"text-field": 語文候補列,
@@ -1406,6 +1414,40 @@ const 諸層 = [{
 	},
 	"paint": {
 		"text-color": "#666", "text-halo-color": "#fff",
+		"text-halo-blur": 0.4,
+		"text-halo-width": 1
+	}
+},{
+	"id": "鐵路-短途綫名", "type": "symbol",
+	"source": "補鐵路", "source-layer": "rail_route_urban",
+	"layout": {
+		"symbol-placement": "line",
+		"text-field": ["step",["zoom"], ["get","short_name"], 16, ["get","name"]],
+		"text-font": 黑體,
+		"text-rotation-alignment": "map",
+		"text-size": ["interpolate",["linear"],["zoom"],
+			11,10, 18,14
+		]
+	},
+	"paint": {
+		"text-color": "#111", "text-halo-color": "#ffe",
+		"text-halo-blur": 0.4,
+		"text-halo-width": 1
+	}
+},{
+	"id": "鐵路-長途綫名", "type": "symbol",
+	"source": "補鐵路", "source-layer": "rail_route_long",
+	"layout": {
+		"symbol-placement": "line",
+		"text-field": ["get","name"],
+		"text-font": 黑體,
+		"text-rotation-alignment": "map",
+		"text-size": ["interpolate",["linear"],["zoom"],
+			8,10, 18,16
+		]
+	},
+	"paint": {
+		"text-color": "#111", "text-halo-color": "#ffe",
 		"text-halo-blur": 0.4,
 		"text-halo-width": 1
 	}
