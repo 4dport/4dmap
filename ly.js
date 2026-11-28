@@ -275,6 +275,11 @@ const 共樣式 = {
 		"icon-image": ["match",["get", "subclass"],["florist", "furniture"],["get", "subclass"],["get", "class"]],
 		"text-anchor": "left", "text-field": 語文候補列,
 		"text-optional": true, "text-padding": 2,
+	},
+	鐵路站圖標: {
+		"icon-image": "railway",
+		"text-anchor": "left", "text-field": ["get","name"],
+		"text-optional": true, "text-padding": 2,
 	}
 };
 const 諸層 = [{
@@ -1452,6 +1457,24 @@ const 諸層 = [{
 		"text-halo-width": 1
 	}
 },{
+	"id": "鐵路-長途軌名", "type": "symbol",
+	"source": "補鐵路", "source-layer": "rail_track",
+	"layout": {
+		"symbol-placement": "line",
+		"text-field": ["case",["get","在建"],["concat",["get","name"],"○在建"],["get","name"]],
+		"text-font": 黑體,
+		"text-rotation-alignment": "map",
+		"text-size": ["interpolate",["linear"],["zoom"],
+			8,10, 18,16
+		]
+	},
+	"paint": {
+		"text-color": ["case",[">=",["get","最高速"],200],"#500","#111"],
+		"text-halo-color": "#ffe",
+		"text-opacity": ["case",["get","在建"],0.7,1],
+		"text-halo-blur": 0.4, "text-halo-width": 1
+	}
+},{
 	"id": "川名", "type": "symbol",
 	"source": "開放免費地圖", "source-layer": "waterway",
 	"minzoom": 8,
@@ -1775,14 +1798,14 @@ const 諸層 = [{
 	}
 },{
 	"id": "邑軌交通站名", "type": "symbol",
-	"source": "開放免費地圖", "source-layer": "poi",
+	"source": "補鐵路", "source-layer": "rail_station_urban",
 	"minzoom": 12,
-	"filter": ["all",
-		["==",["get", "class"], "railway"],
-		["!=", ["get", "subclass"], "station"]
-	],
+	// "filter": ["all",
+	// 	["==",["get", "class"], "railway"],
+	// 	["!=", ["get", "subclass"], "station"]
+	// ],
 	"layout": {
-		...共樣式["開放免費地圖圖標"], "icon-size": 0.7, "text-offset": [0.6, 0],
+		...共樣式["鐵路站圖標"], "icon-size": 0.7, "text-offset": [0.6, 0],
 		"text-font": ["step", ["zoom"], ["literal", 黑體], 13, ["literal", 膚廓體]],
 		"text-max-width": 7,
 		"text-size": ["interpolate",["linear"],["zoom"], 12,10, 18,16],
@@ -1796,15 +1819,15 @@ const 諸層 = [{
 	}
 },{
 	"id": "長途鐵路站名", "type": "symbol",
-	"source": "開放免費地圖", "source-layer": "poi",
+	"source": "補鐵路", "source-layer": "rail_station_long",
 	"minzoom": 11, "maxzoom": 20,
-	"filter": ["all",
-		["==",["get", "class"], "railway"],
-		["==", ["get", "subclass"], "station"],
-		["==", ["get", "rank"], 1]
-	],
+	// "filter": ["all",
+	// 	["==",["get", "class"], "railway"],
+	// 	["==", ["get", "subclass"], "station"],
+	// 	["==", ["get", "rank"], 1]
+	// ],
 	"layout": {
-		...共樣式["開放免費地圖圖標"], "text-radial-offset": ["interpolate",["linear"],["zoom"], 11,1.2,14,0.6],
+		...共樣式["鐵路站圖標"], "text-radial-offset": ["interpolate",["linear"],["zoom"], 11,1.2,14,0.6],
 		"text-font": ["step", ["zoom"], ["literal", 黑體], 13, ["literal", 隸書]],
 		"text-max-width": 9,
 		"text-size": ["interpolate",["linear"],["zoom"], 12,10, 18,20],
