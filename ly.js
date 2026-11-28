@@ -41,7 +41,7 @@ const 隸書 = ["漢文隸書","隶书"];
 const 語文候補列 = ["coalesce", ["get","name:zh-Hant"],["get","name:zh"],["get","name:ko-Hani"],["get","name"],["get","name:ja"]];
 const 色 = {"馳道":["interpolate",["linear"],["zoom"],15,"#fc8",17,"hsl(211, 30%, 55%)"], "幹路":"hsl(211, 30%, 65%)", "一級路":"hsl(208, 24%, 70%)", "二級路":"hsl(208, 15%, 70%)", "三級路":["interpolate",["linear"],["zoom"],11,"hsl(208, 0%, 70%)",13,"hsl(208, 15%, 70%)"], "局域路":"hsl(208, 15%, 90%)", "巷":"#fff", "步道": "hsl(30, 35%, 73%)",
 	"馳道緣":["interpolate",["linear"],["zoom"],15,"#e9ac77",17,"hsl(8, 72%, 60%)"], "幹路緣":["interpolate",["linear"],["zoom"],7,"hsl(8, 0%, 69%)",8,"hsl(8, 72%, 69%)"], "一二三級路緣":"hsl(211, 30%, 45%)", "局域路緣":"hsl(208, 5%, 70%)", "巷緣": "#cfcdca",
-	"邑軌":"#bbb", "長途軌":"#555", "軌間":"#fff",
+	"邑軌":"#bbb", "長途軌":["case",[">=",["get","最高速"],200],"#401","#555"], "軌間":"#fff",
 	"國界粗綫":"hsl(270,70%,66%)", "國界中心綫":"#c19", "政區界綫":"hsl(270,70%,36%)",
 	"郡縣名":"#000", "鄉村名":"#111", "水名":"rgb(0, 10, 154)"//#495e91
 };
@@ -474,28 +474,33 @@ const 諸層 = [{
 	}
 },{
 	"id": "隧-鐵路-長途", "type": "line",
-	"source": "開放免費地圖", "source-layer": "transportation",
+	"source": "補鐵路", "source-layer": "rail_track",
 	"minzoom": 5,
 	"filter": ["all",
-		["match",["geometry-type"],["LineString", "MultiLineString"], true, false],
-		["==", ["get", "class"], "rail"],
-		["!",["has", "service"]],
-		["==",["get", "brunnel"], "tunnel"]
+		// ["match",["geometry-type"],["LineString", "MultiLineString"], true, false],
+		// ["==", ["get", "class"], "rail"],
+		// ["!",["has", "service"]],
+		// ["==",["get", "brunnel"], "tunnel"]
+		["!",["has", "服務"]],
+		["==",["get", "橋隧"], "隧"]
 	],
 	"layout": {"line-join": "round"},
 	"paint": {
-		"line-color": 色["長途軌"], "line-opacity": 0.5,
+		"line-color": 色["長途軌"],
+		"line-opacity": 0.5,
 		"line-width": 路寬["軌外"]
 	}
 },{
 	"id": "隧-鐵路-長途虛綫", "type": "line",
-	"source": "開放免費地圖", "source-layer": "transportation",
+	"source": "補鐵路", "source-layer": "rail_track",
 	"minzoom": 5,
 	"filter": ["all",
-		["match",["geometry-type"],["LineString", "MultiLineString"], true, false],
-		["==", ["get", "class"], "rail"],
-		["!",["has", "service"]],
-		["==",["get", "brunnel"], "tunnel"]
+		// ["match",["geometry-type"],["LineString", "MultiLineString"], true, false],
+		// ["==", ["get", "class"], "rail"],
+		// ["!",["has", "service"]],
+		// ["==",["get", "brunnel"], "tunnel"]
+		["!",["has", "服務"]],
+		["==",["get", "橋隧"], "隧"]
 	],
 	"layout": {"line-join": "round"},
 	"paint": {
@@ -1077,13 +1082,15 @@ const 諸層 = [{
 	}
 },{
 	"id": "鐵路-長途", "type": "line",
-	"source": "開放免費地圖", "source-layer": "transportation",
+	"source": "補鐵路", "source-layer": "rail_track",
 	"minzoom": 5,
 	"filter": ["all",
-		["match",["geometry-type"],["LineString", "MultiLineString"], true, false],
-		["==", ["get", "class"], "rail"],
-		["!",["has", "service"]],
-		["match",["get", "brunnel"],["bridge", "tunnel"], false, true]
+		// ["match",["geometry-type"],["LineString", "MultiLineString"], true, false],
+		// ["==", ["get", "class"], "rail"],
+		// ["!",["has", "service"]],
+		// ["match",["get", "brunnel"],["bridge", "tunnel"], false, true]
+		["!",["has", "服務"]],
+		["match",["get", "橋隧"],["橋", "隧"], false, true]
 	],
 	"layout": {"line-join": "round"},
 	"paint": {
@@ -1092,13 +1099,15 @@ const 諸層 = [{
 	}
 },{
 	"id": "鐵路-長途虛綫", "type": "line",
-	"source": "開放免費地圖", "source-layer": "transportation",
+	"source": "補鐵路", "source-layer": "rail_track",
 	"minzoom": 5,
 	"filter": ["all",
-		["match",["geometry-type"],["LineString", "MultiLineString"], true, false],
-		["==", ["get", "class"], "rail"],
-		["!",["has", "service"]],
-		["match",["get", "brunnel"],["bridge", "tunnel"], false, true]
+		// ["match",["geometry-type"],["LineString", "MultiLineString"], true, false],
+		// ["==", ["get", "class"], "rail"],
+		// ["!",["has", "service"]],
+		// ["match",["get", "brunnel"],["bridge", "tunnel"], false, true]
+		["!",["has", "服務"]],
+		["match",["get", "橋隧"],["橋", "隧"], false, true]
 	],
 	"layout": {"line-join": "round"},
 	"paint": {
@@ -1442,13 +1451,14 @@ const 諸層 = [{
 },{
 	"id": "鐵路-長途綫名", "type": "symbol",
 	"source": "補鐵路", "source-layer": "rail_route_long",
+	"minzoom": 16,
 	"layout": {
 		"symbol-placement": "line",
 		"text-field": ["get","name"],
 		"text-font": 黑體,
 		"text-rotation-alignment": "map",
 		"text-size": ["interpolate",["linear"],["zoom"],
-			8,10, 18,16
+			16,10, 20,16
 		]
 	},
 	"paint": {
@@ -1469,7 +1479,7 @@ const 諸層 = [{
 		]
 	},
 	"paint": {
-		"text-color": ["case",[">=",["get","最高速"],200],"#500","#111"],
+		"text-color": ["case",[">=",["get","最高速"],200],"#401","#111"],
 		"text-halo-color": "#ffe",
 		"text-opacity": ["case",["get","在建"],0.7,1],
 		"text-halo-blur": 0.4, "text-halo-width": 1
@@ -2366,29 +2376,29 @@ function 填層(){
 	}
 },{
 	"id": "橋"+String(l)+"鐵路-長途", "type": "line",
-	"source": "開放免費地圖", "source-layer": "transportation",
+	"source": "補鐵路", "source-layer": "rail_track",
 	"minzoom": 5,
-	"filter": ["all",
+	"filter": /*["all",
 		["match",["geometry-type"],["LineString", "MultiLineString"], true, false],
 		["==", ["get", "class"], "rail"],
 		["==",["get", "brunnel"], "bridge"]
-	],
+	]*/["==",["get", "橋隧"], "橋"],
 	"layout": {"line-join": "round"},
 	"paint": {
 		"line-color": 色["長途軌"],
 		"line-width": ["interpolate",["exponential", 1.3],["zoom"],
-			12,5, 20,9
+			11,3, 12,5, 20,9
 		]
 	}
 },{
 	"id": "橋"+String(l)+"鐵路-長途虛綫", "type": "line",
-	"source": "開放免費地圖", "source-layer": "transportation",
+	"source": "補鐵路", "source-layer": "rail_track",
 	"minzoom": 5,
-	"filter": ["all",
+	"filter": /*["all",
 		["match",["geometry-type"],["LineString", "MultiLineString"], true, false],
 		["==", ["get", "class"], "rail"],
 		["==",["get", "brunnel"], "bridge"]
-	],
+	]*/["==",["get", "橋隧"], "橋"],
 	"layout": {"line-join": "round"},
 	"paint": {
 		"line-color": 色["軌間"],
